@@ -23,6 +23,18 @@ const Documentos = sequelize.define(
     APLICACION: {
       type: DataTypes.STRING,
     },
+    CARGADO_DE_FACT: {
+      type: DataTypes.STRING,
+    },
+    SUBTIPO: {
+      type: DataTypes.INTEGER,
+    },
+    CreateDate: {
+      type: DataTypes.STRING,
+    },
+    IMPUESTO1: {
+      type: DataTypes.DECIMAL,
+    },
   },
   { timestamps: false, hasTrigger: true }
 );

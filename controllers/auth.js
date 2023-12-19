@@ -481,6 +481,9 @@ const generarCodigo = async (req, res) => {
         from: '"Soporte Bellmart S.A.de C.V." <no-reply@bellmart.com>', // sender address
         to: email, // list of receivers
         subject: "Su clave de acesso es :" + code, // Subject line
+        attachments:[
+          
+        ],
         html: `
       <div style="box-sizing:border-box;width:100%;height:100%;margin:0;padding:0;background:#f1f1f1!important;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"> 
       <table align="center" bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;max-width:650px;border:1px solid #eaeaea;table-layout:auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"> 

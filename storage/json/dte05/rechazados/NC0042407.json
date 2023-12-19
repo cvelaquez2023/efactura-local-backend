@@ -1,0 +1,113 @@
+{
+  "identificacion": {
+    "version": 3,
+    "ambiente": "00",
+    "tipoDte": "05",
+    "numeroControl": "DTE-05-00000000-000000000000002",
+    "codigoGeneracion": "BBC6017F-B553-4DD1-A6C6-1E969A8D5E57",
+    "tipoModelo": 1,
+    "tipoOperacion": 1,
+    "tipoContingencia": null,
+    "motivoContin": null,
+    "fecEmi": "2023-12-12",
+    "horEmi": "11:08:00",
+    "tipoMoneda": "USD"
+  },
+  "documentoRelacionado": [
+    {
+      "tipoDocumento": "03",
+      "tipoGeneracion": 1,
+      "numeroDocumento": "CF0284868",
+      "fechaEmision": "2022-11-04"
+    }
+  ],
+  "emisor": {
+    "nit": "06140110911040",
+    "nrc": "291048",
+    "nombre": "DROGUERIA UNIVERSAL, S.A. DE C.V.",
+    "codActividad": "46484",
+    "descActividad": "Venta de productos farmaceuticos y medicinales",
+    "nombreComercial": "DROGUERIA UNIVERSAL, S.A. DE C.V",
+    "tipoEstablecimiento": "01",
+    "direccion": {
+      "departamento": "06",
+      "municipio": "14",
+      "complemento": "ALAMEDA ROOSEVELT COL FLOR BLANCA N 2736"
+    },
+    "telefono": "25351000",
+    "correo": "DUCONTABILIDAD@GMAIL.COM"
+  },
+  "receptor": {
+    "nit": "08210412921074",
+    "nrc": "2921012",
+    "nombre": "ARGENIS ANTONIO ORTIZ AGUIÑADA+",
+    "codActividad": "46484",
+    "descActividad": "Venta de productos farmacéuticos y medicinales",
+    "nombreComercial": "FARMACIA VICTORIA---",
+    "direccion": {
+      "departamento": "08",
+      "municipio": "21",
+      "complemento": "BARRIO SAN JOSE Y 1A AV SUR # 1-B (FRENTE A CAJAS DE CREDITO) ZACATECOLUCA. LA PAZ"
+    },
+    "telefono": "79522390",
+    "correo": "farmaciaemporiumfact@hotmail.com"
+  },
+  "ventaTercero": null,
+  "cuerpoDocumento": [
+    {
+      "numItem": 1,
+      "tipoItem": 1,
+      "numeroDocumento": "CF0284868",
+      "codigo": "9701055",
+      "codTributo": null,
+      "descripcion": "CICLOFERON XTRM SOLN SPRAY 50  LOTE:A05063 FECHA_VENCE:18-05-2022",
+      "cantidad": 1,
+      "uniMedida": 59,
+      "precioUni": 8.761062,
+      "montoDescu": 0,
+      "ventaNoSuj": 0,
+      "ventaExenta": 0,
+      "ventaGravada": 8.7611,
+      "tributos": ["20"]
+    }
+  ],
+  "resumen": {
+    "totalNoSuj": 0,
+    "totalExenta": 0,
+    "totalGravada": 8.76,
+    "subTotalVentas": 8.76,
+    "descuNoSuj": 0,
+    "descuExenta": 0,
+    "descuGravada": 0,
+    "totalDescu": 0,
+    "tributos": [
+      {
+        "codigo": "20",
+        "descripcion": "Impuesto al Valor Agregado 13%",
+        "valor": 1.14
+      }
+    ],
+    "subTotal": 8.76,
+    "ivaPerci1": 0,
+    "ivaRete1": 0,
+    "reteRenta": 0,
+    "montoTotalOperacion": 9.9,
+    "totalLetras": "NUEVE  con 9/100 USD",
+    "condicionOperacion": 1
+  },
+  "extension": null,
+  "apendice": null,
+  "respuestamh": {
+    "version": 2,
+    "ambiente": "00",
+    "versionApp": 2,
+    "estado": "RECHAZADO",
+    "codigoGeneracion": "BBC6017F-B553-4DD1-A6C6-1E969A8D5E57",
+    "selloRecibido": null,
+    "fhProcesamiento": "14/12/2023 01:17:06",
+    "clasificaMsg": "11",
+    "codigoMsg": "004",
+    "descripcionMsg": "[identificacion.numeroControl] YA EXISTE UN REGISTRO CON ESE VALOR",
+    "observaciones": []
+  }
+}

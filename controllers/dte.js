@@ -595,6 +595,46 @@ const getDteProveedor = async (req, res) => {
   }
 };
 
+const getDteCliente = async (req, res) => {
+  //consultamos todos los dte de los proveedores
+  const mes = req.params.mes;
+  const ano = req.params.ano;
+
+  try {
+    const _dataProveedor = await sequelize.query(
+      `select Dte_Id,Dte,nombre,procesado,tipoDoc,selloRecibido,codigoGeneracion,Convert(VarChar, fechaemision, 103) as fechaemision,montoTotal,Documento,mudulo,estado,UpdateDate as fechaProce from dte.dbo.DTES where origen='CLIENTE' and year(fechaemision)='${ano}' and MONTH(fechaemision)='${mes}' `,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    nuevo = JSON.stringify(_dataProveedor);
+    nuevo = JSON.parse(nuevo);
+
+    res.send({ result: nuevo, success: true });
+  } catch (error) {
+    console.log("errror", error);
+    res.send({ results: error.message, result: false });
+  }
+};
+
+const getDteObservaciones = async (req, res) => {
+  try {
+    const dteId = req.params.dteId;
+    const _dataProveedor = await sequelize.query(
+      `select descripcion from dte.dbo.observaciones where dte_id=${dteId} `,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    nuevo = JSON.stringify(_dataProveedor);
+    nuevo = JSON.parse(nuevo);
+
+    res.send({ result: nuevo, success: true });
+  } catch (error) {
+    console.log("errror", error);
+    res.send({ results: error.message, result: false });
+  }
+};
 const getDteProveedorId = async (req, res) => {};
 const putDteProveedor = async (req, res) => {
   const idDte = req.params.id2;
@@ -854,4 +894,6 @@ module.exports = {
   putDteProveedor,
   cargarCPSoftland,
   getCargaCPSoftland,
+  getDteCliente,
+  getDteObservaciones,
 };

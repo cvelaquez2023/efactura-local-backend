@@ -1,11 +1,16 @@
 {
   "name": "apijs",
   "version": "1.0.0",
+  "nodemonConfig": {
+    "ignore": [
+      "store/"
+    ]
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node ./app.js",
-    "dev": "nodemon ./app.js",
+    "dev": "nodemon  ./app.js --ignore '../..storage/*'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -25,6 +30,9 @@
     "multer": "^1.4.5-lts.1",
     "node-windows": "^1.0.0-beta.8",
     "nodemailer": "^6.9.4",
+    "pdfkit": "^0.14.0",
+    "pdfkit-construct": "^1.2.3",
+    "pdfkit-table": "^0.1.99",
     "sequelize": "^6.32.0",
     "tedious": "^16.1.0"
   }

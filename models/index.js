@@ -34,6 +34,7 @@ const models = {
   docsSoporteModel: require("./DocsSoporte"),
   cuentaConatbleModel: require("./CuentaContable"),
   subtipoDocCCModel: require("./subtipoDocCC"),
+  auxiliarCCModel: require("./AuxiliarCC"),
 };
 
 module.exports = models;
