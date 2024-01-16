@@ -3,6 +3,7 @@ const { sequelize } = require("../config/mssql");
 
 const { docSoporteModel, valeModel } = require("../models");
 const { parse } = require("dotenv");
+const { SqlDte } = require("../sqltx/sql");
 
 const postdocsSoporte = async (req, res) => {
   const {
@@ -43,7 +44,7 @@ const postdocsSoporte = async (req, res) => {
       raw: true,
     });
 
-    console.log("valoer de liena del qer", LineaVale[0].max);
+
     if (LineaVale[0].max === 0) {
       nuevaLiena = LineaVale[0].max + 1;
     } else if (LineaVale[0].max > 0) {
@@ -51,7 +52,8 @@ const postdocsSoporte = async (req, res) => {
     } else {
       nuevaLiena = 0;
     }
-
+   const dte = await SqlDte(_doc_soporte)
+   const codgen= dte[0].codigoGeneracion;
     const dato = {
       VALE: _vale,
       LINEA: nuevaLiena,
@@ -82,10 +84,12 @@ const postdocsSoporte = async (req, res) => {
       SUBTOTALES_BIENES: 0.0,
       SUBTOTALES_SERVICIOS: 0.0,
       CLASE_DOC_ES: 4,
+      DOCUMENTO_FISCAL:codgen,
     };
     const guardar = await docSoporteModel.create(dato);
     //actualizamos el saldo de vale
-    const saldoCaja = parseInt(_montoDefinitivo) + parseInt(_monto);
+
+    const saldoCaja = parseFloat(_montoDefinitivo).toFixed(2) + parseFloat(_monto).toFixed(2);
     console.log("vale", _vale);
     const actt = await valeModel.update(
       { MONTO_VALE: saldoCaja },

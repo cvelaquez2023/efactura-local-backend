@@ -4,10 +4,10 @@ const JWT_SECRET_RESET = process.env.JWT_SECRETRESET;
 const tokenSign = async (user) => {
   const sign = jwt.sign(
     {
-      cliente: user.CLIENTE,
-      nombre: user.NOMBRE,
-      rol: user.Rol,
-      nivelPrecio: user.Nivel_Precio,
+      email: user.email,
+      nombres: user.nombres,
+      rol: user.rol,
+      activo: user.activo,
     },
     JWT_SECRET,
     {
@@ -86,8 +86,6 @@ const verifyTokenReset = async (tokenJwt) => {
     return null;
   }
 };
-
-
 
 module.exports = {
   tokenSign,

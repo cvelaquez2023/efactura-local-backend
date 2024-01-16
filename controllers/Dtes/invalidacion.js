@@ -1,8 +1,15 @@
 const { QueryTypes } = require("sequelize");
 const { sequelize } = require("../../config/mssql");
 const { firmaMH, autorizacionMh } = require("../../config/MH");
-const { Sqlempresa, SqlDteReceptor } = require("../../sqltx/sql");
+const {
+  Sqlempresa,
+  SqlDteReceptor,
+  SqlDteRecptor02,
+  SqlDte,
+} = require("../../sqltx/sql");
 const moment = require("moment");
+const doc = require("pdfkit");
+const { emailInvalidado } = require("../../utils/email");
 
 const postInvalidar = async (req, res) => {
   const {
@@ -18,22 +25,34 @@ const postInvalidar = async (req, res) => {
     tipoDocSolicita,
   } = req.body;
 
+  let estado = "";
   //consultados datos del dte
 
   const empresa = await Sqlempresa(empresa_id);
+  const HayContingencia = empresa[0].Contingencia;
 
   if (empresa.length == 0) {
     return res
       .status(400)
       .send({ messaje: "Empresa No existe o no esta activa" });
   }
+  if (HayContingencia) {
+    return res.status(400).send({ messaje: "Sitio esta en Contingencia" });
+  }
 
+  const datos = await SqlDte(documento);
+
+  /*
   const datosDte = await sequelize.query(
-    `select dte.dte_id, dte.tipoDoc,dte.codigoGeneracion,dte.selloRecibido,dte.Dte,CONVERT(nvarchar, dte.fechaemision, 23) as fecEmi,dte.montoTotal as montoIva,IIF(LEN(nit)>12 ,'13','02') as tipoDocumento,re.nit,re.nombre,re.telefono, re.correo, re.tipoDocumento from DTE.dbo.DTES dte,dte.dbo.receptor re where  dte.Dte_Id=re.dte_Id and dte='${documento}'`,
+    `select * from dte.dbo.receptor where  dte_id='${datos[0].Dte_id}'`,
     { type: QueryTypes.SELECT }
   );
+  */
 
-  const _idDte = datosDte[0].dte_id;
+  const datosDte = await SqlDteReceptor(datos[0].Dte_id)
+  const _idDte = datosDte[0].dte_Id;
+
+
 
   const uuid = require("uuid");
   const _codigoGeneracion = uuid.v4().toUpperCase();
@@ -54,22 +73,42 @@ const postInvalidar = async (req, res) => {
     nombre: empresa[0].nombre,
     tipoEstablecimiento: empresa[0].tipoestablecimiento,
     nomEstablecimiento: empresa[0].nombreComercial,
+    codEstableMH: 'M001',
     codEstable: empresa[0].codestable,
+    codPuntoVentaMH: 'P001',
     codPuntoVenta: empresa[0].codPuntoVenta,
     telefono: empresa[0].telefono,
     correo: empresa[0].correoDte,
   };
+
+  if (datosDte[0].nit.length >= 14) {
+    _dui = datosDte[0].nit;
+    _tipoDo = "36";
+  } else {
+    _tipoDo = "13";
+    _dui = datosDte[0].nit;
+  }
+
+  let iva = 0.00
+  if (datos[0].tipoDte === '01') {
+    iva = 0.00;
+  } else {
+    iva = parseFloat(datos[0].montoTotal);
+  }
+
   const _documento = {
-    tipoDte: datosDte[0].tipoDoc,
-    codigoGeneracion: datosDte[0].codigoGeneracion,
-    selloRecibido: datosDte[0].selloRecibido,
-    numeroControl: "DTE-05-00000000-000000000000001",
-    fecEmi: datosDte[0].fecEmi,
-    montoIva: parseFloat(datosDte[0].montoIva.toFixed(2)),
+    tipoDte: datos[0].tipoDoc,
+    codigoGeneracion: datos[0].codigoGeneracion,
+    selloRecibido: datos[0].selloRecibido,
+    numeroControl: documento.replace("-24-", "-"),
+    fecEmi: datos[0].fecEmi,
+    montoIva: iva,
     codigoGeneracionR: null,
-    tipoDocumento: datosDte[0].tipoDocumento,
-    numDocumento: datosDte[0].nit,
+    tipoDocumento: _tipoDo,
+    numDocumento: _dui,
     nombre: datosDte[0].nombre,
+    telefono: datosDte[0].telefono,
+    correo: datosDte[0].correo
   };
 
   const _motivo = {
@@ -82,7 +121,7 @@ const postInvalidar = async (req, res) => {
     tipDocSolicita: tipoDocSolicita,
     numDocSolicita: numDocSolicita,
   };
-  datos = {
+  const datosJs = {
     identificacion: _identificacion,
     emisor: _emisor,
     documento: _documento,
@@ -93,12 +132,21 @@ const postInvalidar = async (req, res) => {
     nit: process.env.DTE_NIT,
     activo: true,
     passwordPri: process.env.DTE_PWD_PRIVADA,
-    dteJson: datos,
+    dteJson: datosJs,
   };
 
-  const _firma = await firmaMH(datafirma);
 
+
+  const _firma = await firmaMH(datafirma);
+  const datos3 = {
+    json: datosJs,
+    _firma
+  }
   //traermos la autorizacion de mh
+/*
+  res.send(datos3)
+  return
+*/
   const _auth = await autorizacionMh();
   _token = _auth.token;
 
@@ -114,6 +162,7 @@ const postInvalidar = async (req, res) => {
     documento: _firma,
   });
 
+
   var requestOptions = {
     method: "POST",
     headers: myHeaders,
@@ -124,7 +173,7 @@ const postInvalidar = async (req, res) => {
   const postInvaliddardte = async () => {
     try {
       const response = await fetch(
-        "https://apitest.dtes.mh.gob.sv/fesv/anulardte",
+        "https://api.dtes.mh.gob.sv/fesv/anulardte",
         requestOptions
       );
       const data = await response.json();
@@ -135,7 +184,6 @@ const postInvalidar = async (req, res) => {
   };
 
   const _respuestaMH = await postInvaliddardte();
-
   if (_respuestaMH.estado === "RECHAZADO") {
     try {
       const respuestaMhId = await sequelize.query(
@@ -158,21 +206,42 @@ const postInvalidar = async (req, res) => {
         );
       }
 
-      res.send(_respuestaMH);
+      res.send = { result: _respuestaMH, success: false };
     } catch (error) {
       console.log(error);
     }
     //enviamos correo a contabilidad para que corrigan porque esta rechazado
-  } else if (_respuestaMH.estado == "PROCESADO") {
+  } else if (_respuestaMH.estado === "PROCESADO") {
+    const fechaHora = moment
+      .tz(_respuestaMH.fhProcesamiento, "America/El_Salvador")
+      .format("YYYY-MM-DD HH:mm:ss");
+
+
     await sequelize.query(
-      `update dte.dbo.dtes set selloRecibidoInva='${_respuestaMH.selloRecibido}',fechaHoraInva=''${_respuestaMH.fhProcesamiento},invalidado=1,codigoGeneracionInvalidacion='${_respuestaMH.codigoGeneracion}',estadoIvalidacion='${_respuestaMH.estado}' where Dte_id= ${_idDte}`,
+      `update dte.dbo.dtes set selloRecibidoInva='${_respuestaMH.selloRecibido}',fechaHoraInva='${fechaHora}',invalidado=1,codigoGeneracionInvalidacion='${_respuestaMH.codigoGeneracion}',estadoIvalidacion='${_respuestaMH.estado}' where Dte_id= ${_idDte}`,
       { type: QueryTypes.SELECT }
     );
+    //Consultados correo del cliente
 
-    res.send(JsonCliente);
+    const doc = documento.replace('-24-', '-')
+    await emailInvalidado(
+      doc,
+      datosDte[0].correo,
+      "dte07"
+    );
+    res.send({
+      errors: ["Procesado en Hacienda Aceptados"],
+      result: "Procesado en Hacienda Aceptados",
+      success: true,
+      hacienda: true,
+    });
+  } else if (_respuestaMH.estado === null) {
+    res.send({
+      result: "problema Ministerio Haicenda",
+      errors: [_respuestaMH.descripcionMsg],
+      success: false,
+    });
   }
-
-  res.send({ result: _respuestaMH, success: true });
 };
 
 module.exports = postInvalidar;

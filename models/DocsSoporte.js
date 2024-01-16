@@ -95,6 +95,9 @@ const DocsSoporte = sequelize.define(
     CLASE_DOC_ES: {
       type: DataTypes.INTEGER,
     },
+    DOCUMENTO_FISCAL: {
+      type: DataTypes.STRING,
+    },
   },
   { timestamps: false, hasTrigger: true }
 );

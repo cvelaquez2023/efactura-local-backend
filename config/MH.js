@@ -7,6 +7,7 @@ const {
   SqlClienteExp,
   SqlDocumentoCPDte14,
   SqlDocumentoCPDte07,
+  SqlDireEmbarque,
 } = require("../sqltx/sql");
 const moment = require("moment");
 const { sequelize } = require("./mssql");
@@ -16,7 +17,7 @@ const _moneda = process.env.MONEDA;
 
 const firmaMH = async (datos) => {
   try {
-    const response = await fetch(`http://localhost:8113/firmardocumento/`, {
+    const response = await fetch(`http://192.168.1.159:8113/firmardocumento/`, {
       body: JSON.stringify(datos),
       headers: {
         "Content-Type": "application/json; charset=UTF-8",
@@ -33,7 +34,7 @@ const firmaMH = async (datos) => {
 const autorizacionMh = async () => {
   try {
     const response = await fetch(
-      `https://apitest.dtes.mh.gob.sv/seguridad/auth`,
+      `https://api.dtes.mh.gob.sv/seguridad/auth`,
       {
         body: new URLSearchParams({
           user: process.env.DTE_USER_API,
@@ -69,6 +70,9 @@ const identificacion = async (
       case "03":
         _VersionDte = datosEmpresa[0].VersionDte03;
         break;
+      case "04":
+        _VersionDte = datosEmpresa[0].VersionDte03;
+        break;
       case "05":
         _VersionDte = datosEmpresa[0].VersionDte05;
         break;
@@ -85,21 +89,52 @@ const identificacion = async (
         break;
     }
 
-    const datosFactura = await datosFac(_factura, _tipoDoc);
-    //CONSULTAMOS EL SUBTIPO DEL DOCUMENTO
 
+    const datosFactura = await datosFac(_factura, _tipoDoc);
+
+
+    //CONSULTAMOS EL SUBTIPO DEL DOCUMENTO
     //consultamos el cliente con los datos
 
     const uuid = require("uuid");
     const _codigoGeneracion = uuid.v4().toUpperCase();
-    const _fechaNueva = moment
-      .tz(datosFactura[0].FECHA_DOCUMENTO, "Amercia/El_Salvador")
-      .format("YYYY-MM-DD");
-    const _hora = moment
-      .tz(datosFactura[0].CreateDate, "Amercia/El_Salvador")
-      .format("HH:MM:ss");
+    let _fechaNueva = "";
+    let _hora = "";
+    if (_tipoDoc === "04") {
+      _fechaNueva = moment
+        .tz(datosFactura[0].FECHA, "America/El_Salvador")
+        .format("YYYY-MM-DD");
+      _hora = datosFactura[0].HORA;
+    }
+    if (_tipoDoc === "14") {
+      _fechaNueva = _factura.aplicacion.fecha
+      // fecha actual
+      let date = new Date();
+      let hora = date.getHours();
+      let minu = date.getMinutes();
+      _hora = hora + ':' + minu;
+    }
+    else {
+
+      _fechaNueva = datosFactura[0].FECHA_DOCUMENTO;
+      /*
+      _fechaNueva = moment
+        .tz(datosFactura[0].FECHA_DOCUMENTO, "America/El_Salvador")
+        .format("YYYY-MM-DD");
+      */
+      _hora = datosFactura[0].CreateDate;
+
+    }
+
     //CONSTRUIMOS EL SEGMENTO IDENTIFICACION
-    const _demoFa = "DTE-05-00000000-24-000000000000001";
+    let _demoFa = ""
+    if (_tipoDoc === "14") {
+      _demoFa = _factura.aplicacion.dte
+    } else {
+      _demoFa = _factura;
+    }
+
+    //const _demoFa = "DTE-04-00000000-24-000000000000053";
     let _numeroC = "";
     if (_demoFa.length >= 31) {
       const _parte1 = _demoFa.substring(0, 15);
@@ -108,6 +143,7 @@ const identificacion = async (
     } else {
       _demoFa;
     }
+
     if (_tipoDoc === "11") {
       const identificacion = {
         version: datosEmpresa[0].VersionDte11,
@@ -125,7 +161,7 @@ const identificacion = async (
         tipoMoneda: process.env.MONEDA,
       };
       return identificacion;
-    } else if (_tipoDoc == "03" || _tipoDoc == "05") {
+    } else if (_tipoDoc == "03" || _tipoDoc == "05" || _tipoDoc == "04") {
       const identificacion = {
         version: datosEmpresa[0].VersionDte03,
         ambiente: datosEmpresa[0].ambiente,
@@ -141,10 +177,45 @@ const identificacion = async (
         horEmi: _hora,
         tipoMoneda: process.env.MONEDA,
       };
+
       return identificacion;
     } else if (_tipoDoc == "01") {
       const identificacion = {
         version: datosEmpresa[0].VersionDte01,
+        ambiente: datosEmpresa[0].ambiente,
+        tipoDte: _tipoDoc,
+        //numeroControl: _factura,
+        numeroControl: _numeroC,
+        codigoGeneracion: _codigoGeneracion.toUpperCase(),
+        tipoModelo: 1,
+        tipoOperacion: 1,
+        tipoContingencia: null,
+        motivoContin: null,
+        fecEmi: _fechaNueva,
+        horEmi: _hora,
+        tipoMoneda: process.env.MONEDA,
+      };
+      return identificacion;
+    } else if (_tipoDoc === "07") {
+      const identificacion = {
+        version: datosEmpresa[0].VersionDte07,
+        ambiente: datosEmpresa[0].ambiente,
+        tipoDte: _tipoDoc,
+        //numeroControl: _factura,
+        numeroControl: _numeroC,
+        codigoGeneracion: _codigoGeneracion.toUpperCase(),
+        tipoModelo: 1,
+        tipoOperacion: 1,
+        tipoContingencia: null,
+        motivoContin: null,
+        fecEmi: _fechaNueva,
+        horEmi: _hora,
+        tipoMoneda: process.env.MONEDA,
+      };
+      return identificacion;
+    } else if (_tipoDoc == "14") {
+      const identificacion = {
+        version: datosEmpresa[0].VersionDte14,
         ambiente: datosEmpresa[0].ambiente,
         tipoDte: _tipoDoc,
         //numeroControl: _factura,
@@ -166,10 +237,13 @@ const identificacion = async (
 };
 const datosFac = async (factura, tipodoc) => {
   if (tipodoc === "14") {
-    const datosFactura = await SqlDocumentoCPDte14(factura);
+    const datosFactura = factura.aplicacion.dte;
     return datosFactura;
   } else if (tipodoc == "07") {
     const datosFactura = await SqlDocumentoCPDte07(factura);
+    return datosFactura;
+  } else if (tipodoc == "04") {
+    const datosFactura = await SqlFactura(factura);
     return datosFactura;
   } else {
     const datosFactura = await SqlDocumentoCC(factura);
@@ -179,7 +253,7 @@ const datosFac = async (factura, tipodoc) => {
 const emisor = async (_empresa, tipoDte) => {
   const empresa = await Sqlempresa(_empresa);
 
-  if (tipoDte === "03" || tipoDte === "01") {
+  if (tipoDte === "03" || tipoDte === "01" || tipoDte === "04") {
     const emisor = {
       nit: empresa[0].nit,
       nrc: empresa[0].nrc,
@@ -294,20 +368,38 @@ const emisor = async (_empresa, tipoDte) => {
 };
 const receptor = async (_factura, tipoDte) => {
   const data = await SqlFactura(_factura);
+  let cliente = ""
+  if (data.length > 0) {
+    cliente = data[0].CLIENTE
+  } else {
+    const d = await SqlDocumentoCC(_factura)
+    if (d[0].CLI_CORPORAC_ASOC === null) {
+      cliente = d[0].CLIENTE
+    } else {
+      cliente = d[0].CLIENTE_REPORTE
+    }
+
+  }
+
   const dataCliente = await sequelize.query(
-    `EXEC dte.dbo.dte_Cliente '${data[0].CLIENTE}'`,
+    `EXEC dte.dbo.dte_Cliente '${cliente}'`,
     {
       type: QueryTypes.SELECT,
     }
   );
   if (tipoDte === "03" || tipoDte === "05") {
+    let _correo = dataCliente[0].CORREODTE;
+    let _nit = dataCliente[0].CONTRIBUYENTE
+
+
     const receptor = {
-      nit: dataCliente[0].CONTRIBUYENTE,
+      nit: _nit.trim(),
+
       //nrc: dataCliente[0].RUBRO1_CLI.replace("-", ""),
       //codActividad: dataCliente[0].RUBRO8_CLIENTE,
       //descActividad: dataCliente[0].RUBRO9_CLIENTE,
       //correo: dataCliente[0].RUBRO7_CLIENTE,
-      nrc: dataCliente[0].NRC.replace("-", ""),
+      nrc: dataCliente[0].NRC.replace("-", "").trim(),
       nombre: dataCliente[0].ALIAS.replace("'", ""),
       codActividad: dataCliente[0].CODACT,
       descActividad: dataCliente[0].DESCACT,
@@ -315,10 +407,10 @@ const receptor = async (_factura, tipoDte) => {
       direccion: {
         departamento: dataCliente[0].ZONA.substring(0, 2),
         municipio: dataCliente[0].ZONA.substring(2, 4),
-        complemento: dataCliente[0].DIRECCION,
+        complemento: dataCliente[0].DIRECCION.replace("DETALLE:", ""),
       },
       telefono: dataCliente[0].TELEFONO1.replace("-", ""),
-      correo: dataCliente[0].CORREODTE,
+      correo: _correo,
     };
     return receptor;
   }
@@ -342,7 +434,7 @@ const receptor = async (_factura, tipoDte) => {
   if (tipoDte === "01") {
     let _tipoDo = "";
     let _dui = "";
-    if (dataCliente[0].CONTRIBUYENTE.length == 14) {
+    if (dataCliente[0].CONTRIBUYENTE.length >= 14) {
       _dui = dataCliente[0].CONTRIBUYENTE;
       _tipoDo = "36";
     } else {
@@ -353,13 +445,20 @@ const receptor = async (_factura, tipoDte) => {
       _dui = dui01 + "-" + dui02;
     }
 
-    let _correo = "";
+    let _correo,
+      _telefono = "";
 
     if (dataCliente[0].E_MAIL.length === 1) {
       _correo = null;
     } else {
       _correo = dataCliente[0].E_MAIL;
     }
+    if (dataCliente[0].TELEFONO1 === 1) {
+      _telefono = null;
+    } else {
+      _telefono = dataCliente[0].TELEFONO1.replace("-", "");
+    }
+
     const receptor = {
       tipoDocumento: _tipoDo,
       numDocumento: _dui,
@@ -367,9 +466,113 @@ const receptor = async (_factura, tipoDte) => {
       nombre: dataCliente[0].NOMBRE.replace("'", ""),
       codActividad: null,
       descActividad: null,
-      direccion: null,
-      telefono: dataCliente[0].TELEFONO1.replace("-", ""),
+      direccion: {
+        departamento: dataCliente[0].ZONA.substring(0, 2),
+        municipio: dataCliente[0].ZONA.substring(2, 4),
+        complemento: dataCliente[0].DIRECCION,
+      },
+      telefono: _telefono,
       correo: _correo,
+    };
+    return receptor;
+  }
+  if (tipoDte === "07") {
+    let _tipoDo = "";
+    let _dui = "";
+    if (dataCliente[0].CONTRIBUYENTE.length >= 14) {
+      _dui = dataCliente[0].CONTRIBUYENTE;
+      _tipoDo = "36";
+    } else {
+      _tipoDo = "13";
+      const dui00 = dataCliente[0].CONTRIBUYENTE;
+      const dui01 = dui00.substring(0, 8);
+      const dui02 = dui00.substring(8, 9);
+      _dui = dui01 + "-" + dui02;
+    }
+
+    let _correo,
+      _telefono = "";
+
+    if (dataCliente[0].E_MAIL.length === 1) {
+      _correo = null;
+    } else {
+      _correo = dataCliente[0].E_MAIL;
+    }
+    if (dataCliente[0].TELEFONO1 === 1) {
+      _telefono = null;
+    } else {
+      _telefono = dataCliente[0].TELEFONO1.replace("-", "");
+    }
+
+    const receptor = {
+      tipoDocumento: _tipoDo,
+      numDocumento: _dui,
+      nrc: dataCliente[0].NRC.replace("-", "").trim(),
+      nombre: dataCliente[0].ALIAS.replace("'", ""),
+      codActividad: dataCliente[0].CODACT,
+      descActividad: dataCliente[0].DESCACT,
+      nombreComercial: dataCliente[0].NOMBRE.replace("'", ""),
+      direccion: {
+        departamento: dataCliente[0].ZONA.substring(0, 2),
+        municipio: dataCliente[0].ZONA.substring(2, 4),
+        complemento: dataCliente[0].DIRECCION,
+      },
+      telefono: _telefono,
+      correo: _correo,
+    };
+    return receptor;
+  }
+  if (tipoDte === "04") {
+    let _tipoDo = "";
+    let _dui = "";
+    let _nrc = "";
+    if (dataCliente[0].CONTRIBUYENTE.length >= 14) {
+      _dui = dataCliente[0].CONTRIBUYENTE;
+      _tipoDo = "36";
+    } else {
+      _tipoDo = "13";
+      const dui00 = dataCliente[0].CONTRIBUYENTE;
+      const dui01 = dui00.substring(0, 8);
+      const dui02 = dui00.substring(8, 9);
+      _dui = dui01 + "-" + dui02;
+    }
+
+    let _correo,
+      _telefono = "";
+
+    if (dataCliente[0].E_MAIL.length === 1) {
+      _correo = null;
+    } else {
+      _correo = dataCliente[0].E_MAIL;
+    }
+    if (dataCliente[0].TELEFONO1 === 1) {
+      _telefono = null;
+    } else {
+      _telefono = dataCliente[0].TELEFONO1.replace("-", "");
+    }
+
+    if (dataCliente[0].NRC === null || dataCliente[0].NRC === "ND") {
+      _nrc = null;
+    } else {
+      _nrc = dataCliente[0].NRC.replace("-", "");
+    }
+
+    const receptor = {
+      tipoDocumento: _tipoDo,
+      numDocumento: _dui,
+      nrc: _nrc,
+      nombre: dataCliente[0].ALIAS.replace("'", ""),
+      codActividad: dataCliente[0].CODACT,
+      descActividad: dataCliente[0].DESCACT,
+      nombreComercial: dataCliente[0].NOMBRE.replace("'", ""),
+      direccion: {
+        departamento: dataCliente[0].ZONA.substring(0, 2),
+        municipio: dataCliente[0].ZONA.substring(2, 4),
+        complemento: dataCliente[0].DIRECCION,
+      },
+      telefono: _telefono,
+      correo: _correo,
+      bienTitulo: "01",
     };
     return receptor;
   }
@@ -385,7 +588,8 @@ const receptor07 = async (_factura) => {
   );
 
   let _tipoDo = "";
-  let _dui = "";
+  let _dui,
+    _nrc = "";
   if (dataCliente[0].CONTRIBUYENTE.length == 14) {
     _dui = dataCliente[0].CONTRIBUYENTE;
     _tipoDo = "36";
@@ -396,10 +600,15 @@ const receptor07 = async (_factura) => {
     const dui02 = dui00.substring(8, 9);
     _dui = dui01 + "-" + dui02;
   }
+  if (dataCliente[0].nrc === null) {
+    _nrc = null;
+  } else {
+    _nrc = dataCliente[0].nrc.replace("-", "");
+  }
   const receptor = {
     tipoDocumento: _tipoDo,
     numDocumento: _dui,
-    nrc: dataCliente[0].nrc.replace("-", ""),
+    nrc: _nrc,
     nombre: dataCliente[0].NOMBRE.replace("'", ""),
     codActividad: dataCliente[0].CODACTI,
     descActividad: dataCliente[0].DESACT,
@@ -415,6 +624,243 @@ const receptor07 = async (_factura) => {
   return receptor;
 };
 
+const apendice = async (_factura, tipo, subtipo) => {
+
+  try {
+    const data = await SqlFactura(_factura);
+    if (data.length > 0) {
+      const apen1 = data[0].VENDEDOR;
+      const apend2 = data[0].NOMBRE;
+      const apend3 = data[0].observaciones;
+      const apend4 = data[0].CONDICION_PAGO;
+      const apend5 = data[0].DESCRIPCION;
+      const apend6 = data[0].CLIENTE;
+      const apend7 = data[0].PEDIDO;
+      //Vemos la Direccion de Embarque del cliente
+      const direEmbrque = await SqlDireEmbarque(data[0].CLIENTE, data[0].DIREC_EMBARQUE)
+
+      const apend8 = direEmbrque[0].DESCRIPCION.replace("DETALLE:", "");
+      const _apendice = [];
+      if (tipo == 47) {
+        const apen11 = {
+          campo: 'VENDEDOR',
+          etiqueta: 'VENDEDOR',
+          valor: apen1
+        }
+        const apen12 = {
+          campo: 'NOMBRE',
+          etiqueta: 'NOMBRE',
+          valor: apend2
+        }
+        const apen13 = {
+          campo: 'OBSERVACIONES',
+          etiqueta: 'OBSERVACIONES',
+          valor: ''
+        }
+        const apen14 = {
+          campo: 'PAGO',
+          etiqueta: 'PAGO',
+          valor: apend4
+        }
+        const apen15 = {
+          campo: 'DESCRIPCION',
+          etiqueta: 'DESCRIPCION',
+          valor: apend5
+        }
+        const apen16 = {
+          campo: 'CLIENTE',
+          etiqueta: 'CLIENTE',
+          valor: apend6
+        }
+        const apen17 = {
+          campo: 'PEDIDO',
+          etiqueta: 'PEDIDO',
+          valor: apend7
+        }
+        const apen18 = {
+          campo: 'DIRECION',
+          etiqueta: 'DIRECION',
+          valor: apend8
+        }
+        _apendice.push(apen11);
+        _apendice.push(apen12);
+        _apendice.push(apen13);
+        _apendice.push(apen14);
+        _apendice.push(apen15);
+        _apendice.push(apen16);
+        _apendice.push(apen17);
+        _apendice.push(apen18);
+
+        return _apendice;
+      }
+      if (tipo === "05") {
+        const apen11 = {
+          campo: 'VENDEDOR',
+          etiqueta: 'VENDEDOR',
+          valor: apen1
+        }
+        const apen12 = {
+          campo: 'NOMBRE',
+          etiqueta: 'NOMBRE',
+          valor: apend2
+        }
+        const apen13 = {
+          campo: 'OBSERVACIONES',
+          etiqueta: 'OBSERVACIONES',
+          valor: apend3
+        }
+        const apen14 = {
+          campo: 'PAGO',
+          etiqueta: 'PAGO',
+          valor: apend4
+        }
+        const apen15 = {
+          campo: 'DESCRIPCION',
+          etiqueta: 'DESCRIPCION',
+          valor: apend5
+        }
+        const apen16 = {
+          campo: 'CLIENTE',
+          etiqueta: 'CLIENTE',
+          valor: apend6
+        }
+
+        const apen18 = {
+          campo: 'DIRECION',
+          etiqueta: 'DIRECION',
+          valor: apend8
+        }
+        _apendice.push(apen11);
+        _apendice.push(apen12);
+        _apendice.push(apen13);
+        _apendice.push(apen14);
+        _apendice.push(apen15);
+        _apendice.push(apen16);
+        _apendice.push(apen18);
+
+        return _apendice;
+      }
+      if (subtipo === "03" || subtipo === "01") {
+
+        const apen11 = {
+          campo: 'VENDEDOR',
+          etiqueta: 'VENDEDOR',
+          valor: apen1
+        }
+        const apen12 = {
+          campo: 'NOMBRE',
+          etiqueta: 'NOMBRE',
+          valor: apend2
+        }
+        const apen13 = {
+          campo: 'OBSERVACIONES',
+          etiqueta: 'OBSERVACIONES',
+          valor: apend3
+        }
+        const apen14 = {
+          campo: 'PAGO',
+          etiqueta: 'PAGO',
+          valor: apend4
+        }
+        const apen15 = {
+          campo: 'DESCRIPCION',
+          etiqueta: 'DESCRIPCION',
+          valor: apend5
+        }
+        const apen16 = {
+          campo: 'CLIENTE',
+          etiqueta: 'CLIENTE',
+          valor: apend6
+        }
+        const apen17 = {
+          campo: 'PEDIDO',
+          etiqueta: 'PEDIDO',
+          valor: apend7
+        }
+        const apen18 = {
+          campo: 'DIRECION',
+          etiqueta: 'DIRECION',
+          valor: apend8
+        }
+        _apendice.push(apen11);
+        _apendice.push(apen12);
+        _apendice.push(apen13);
+        _apendice.push(apen14);
+        _apendice.push(apen15);
+        _apendice.push(apen16);
+        _apendice.push(apen17);
+        _apendice.push(apen18);
+
+        return _apendice;
+      }
+
+    } else {
+      const data = await SqlDocumentoCC(_factura);
+      const apen1 = data[0].VENDEDOR;
+      const apend2 = data[0].NOMBREVENDEDOR;
+      const apend6 = data[0].CLIENTE + '-' + data[0].NOMBRE;
+
+      //Vemos la Direccion de Embarque del cliente
+
+      const _apendice = [];
+      const apen11 = {
+        campo: 'VENDEDOR',
+        etiqueta: 'VENDEDOR',
+        valor: apen1
+      }
+      const apen12 = {
+        campo: 'NOMBRE',
+        etiqueta: 'NOMBRE',
+        valor: apend2
+      }
+      const apen13 = {
+        campo: 'OBSERVACIONES',
+        etiqueta: 'OBSERVACIONES',
+        valor: 'ND'
+      }
+      const apen14 = {
+        campo: 'PAGO',
+        etiqueta: 'PAGO',
+        valor: 'ND'
+      }
+      const apen15 = {
+        campo: 'DESCRIPCION',
+        etiqueta: 'DESCRIPCION',
+        valor: 'ND'
+      }
+      const apen16 = {
+        campo: 'CLIENTE',
+        etiqueta: 'CLIENTE',
+        valor: apend6
+      }
+      const apen17 = {
+        campo: 'PEDIDO',
+        etiqueta: 'PEDIDO',
+        valor: 'ND'
+      }
+      const apen18 = {
+        campo: 'DIRECION',
+        etiqueta: 'DIRECION',
+        valor: 'ND'
+      }
+      _apendice.push(apen11);
+      _apendice.push(apen12);
+      _apendice.push(apen13);
+      _apendice.push(apen14);
+      _apendice.push(apen15);
+      _apendice.push(apen16);
+      _apendice.push(apen17);
+      _apendice.push(apen18);
+
+      return _apendice;
+
+    }
+
+
+  } catch (error) {
+    console.log(error)
+  }
+}
 module.exports = {
   firmaMH,
   autorizacionMh,
@@ -422,4 +868,5 @@ module.exports = {
   emisor,
   receptor,
   receptor07,
+  apendice
 };

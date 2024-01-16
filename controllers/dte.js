@@ -9,6 +9,7 @@ const {
 } = require("../models");
 const { raw } = require("body-parser");
 const moment = require("moment");
+const { SqlCliente, SqlFactura, SqlDocumentoCC } = require("../sqltx/sql");
 
 const postDteProveedor = async (req, res) => {
   try {
@@ -580,7 +581,7 @@ const getDteProveedor = async (req, res) => {
   //consultamos todos los dte de los proveedores
   try {
     const _dataProveedor = await sequelize.query(
-      "select Dte_Id,Dte,nombre,procesado,tipoDoc,selloRecibido,codigoGeneracion,fechaemision,montoTotal,Documento,mudulo from dte.dbo.DTES where origen='PROVEEDOR'",
+      "select Dte_Id,Dte,nombre,procesado,tipoDoc,selloRecibido,codigoGeneracion,fechaemision,montoTotal,Documento,mudulo from dte.dbo.DTES where origen='PROVEEDOR' and tipoDoc='03'",
       {
         type: QueryTypes.SELECT,
       }
@@ -602,7 +603,35 @@ const getDteCliente = async (req, res) => {
 
   try {
     const _dataProveedor = await sequelize.query(
-      `select Dte_Id,Dte,nombre,procesado,tipoDoc,selloRecibido,codigoGeneracion,Convert(VarChar, fechaemision, 103) as fechaemision,montoTotal,Documento,mudulo,estado,UpdateDate as fechaProce from dte.dbo.DTES where origen='CLIENTE' and year(fechaemision)='${ano}' and MONTH(fechaemision)='${mes}' `,
+      `select Dte_Id,Dte,nombre,procesado,tipoDoc,selloRecibido,codigoGeneracion,Convert(VarChar, fechaemision, 103) as fechaemision,montoTotal,Documento,mudulo,estado,UpdateDate as fechaProce 
+      from 
+      dte.dbo.DTES dte
+      where 
+      origen='CLIENTE' and year(fechaemision)='${ano}' and MONTH(fechaemision)='${mes}' and tipoDoc in ('01','03','05','11') and not exists (select * from DRO_UNI.FACTURA fa where fa.FACTURA=dte.Dte COLLATE Latin1_General_CS_AS and ANULADA='S' )
+      order by fechaemision desc ,dte desc`,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    nuevo = JSON.stringify(_dataProveedor);
+    nuevo = JSON.parse(nuevo);
+
+    res.send({ result: nuevo, success: true });
+  } catch (error) {
+    console.log("errror", error);
+    res.send({ results: error.message, result: false });
+  }
+};
+
+const getProveedor = async (req, res) => {
+  //consultamos todos los dte de los proveedores
+  const mes = req.params.mes;
+  const ano = req.params.ano;
+  const tipo = req.params.tipo;
+
+  try {
+    const _dataProveedor = await sequelize.query(
+      `select Dte_Id,Dte,nombre,procesado,tipoDoc,selloRecibido,codigoGeneracion,Convert(VarChar, fechaemision, 103) as fechaemision,montoTotal,Documento,mudulo,estado,UpdateDate as fechaProce from dte.dbo.DTES where origen='PROVEEDOR' and year(fechaemision)='${ano}' and MONTH(fechaemision)='${mes}' and tipoDoc ='${tipo}' order by fechaemision desc ,dte desc `,
       {
         type: QueryTypes.SELECT,
       }
@@ -635,7 +664,7 @@ const getDteObservaciones = async (req, res) => {
     res.send({ results: error.message, result: false });
   }
 };
-const getDteProveedorId = async (req, res) => {};
+const getDteProveedorId = async (req, res) => { };
 const putDteProveedor = async (req, res) => {
   const idDte = req.params.id2;
   const _selloRecibido = req.params.id3;
@@ -654,6 +683,7 @@ const putDteProveedor = async (req, res) => {
 };
 
 const cargarCPSoftland = async (req, res) => {
+
   try {
     const _dteData = await sequelize.query(
       `select dte,nombre,CONVERT(varchar,fechaemision,103) as fechaemision,montoTotal,documento,tipoDoc,selloRecibido from dte.dbo.dtes where Dte_id=${req.body.id}`,
@@ -661,6 +691,7 @@ const cargarCPSoftland = async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
+    console.log(_dteData)
 
     const _dte = _dteData[0].dte;
     const _tipoDoc = _dteData[0].tipoDoc;
@@ -718,6 +749,7 @@ const cargarCPSoftland = async (req, res) => {
 
 const getCargaCPSoftland = async (req, res) => {
   const _id = req.params.id;
+
   try {
     const _dteData = await sequelize.query(
       `select dte,nombre,fechaemision as fechadoc, CONVERT(varchar,fechaemision,103) as fechaemision,montoTotal,documento,tipoDoc,selloRecibido,codigoGeneracion from dte.dbo.dtes where Dte_id=${_id}`,
@@ -725,6 +757,7 @@ const getCargaCPSoftland = async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
+
 
     const _dte = _dteData[0].dte;
     const _tipoDoc = _dteData[0].tipoDoc;
@@ -761,6 +794,7 @@ const getCargaCPSoftland = async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
+
 
     const _resuTotalNoSuj = _resumen[0].totalNoSuj;
     const _resuTotalExenta = _resumen[0].totalExenta;
@@ -811,6 +845,7 @@ const getCargaCPSoftland = async (req, res) => {
       subQuery: false,
     });
 
+
     //Obtenemos codigo de porveedor
     const _proveedor = await sequelize.query(
       `EXEC dte.dbo.dte_proveedor '${_nitProveedor}'`,
@@ -818,6 +853,7 @@ const getCargaCPSoftland = async (req, res) => {
         type: sequelize.QueryTypes.SELECT,
       }
     );
+
     const _codigoProve = _proveedor[0];
 
     //consultamos maestro de proveedor
@@ -827,11 +863,13 @@ const getCargaCPSoftland = async (req, res) => {
       subQuery: false,
     });
 
+
     const _dataProveeCondPago = _datoProveedor.CONDICION_PAGO;
     const _dataProveeCodImpuesto = _datoProveedor.CODIGO_IMPUESTO;
     const _dataProveeCodMoneda = _datoProveedor.MONEDA;
 
-    //consulamos las condicones de pago
+
+
 
     const _condicionPago = await condicionPagoModel.findOne({
       where: { CONDICION_PAGO: _dataProveeCondPago },
@@ -888,6 +926,42 @@ const getCargaCPSoftland = async (req, res) => {
   }
 };
 
+const getDteDescargarPdf = async (req, res) => {
+  const dteId = req.params.dte;
+
+  const _parte1 = dteId.substring(0, 15);
+  const _parte2 = dteId.substring(19, 34);
+  const _numeroC = _parte1 + "-" + _parte2;
+  const _tipo = dteId.substring(4, 6);
+
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Content-Disposition");
+  res.header("Access-Control-Allow-Headers", "Content-Disposition");
+  res.header("content-type", "application/text");
+  res.download(`./storage/pdf/dte${_tipo}/${_numeroC}.pdf`);
+};
+
+const getCliente = async (req, res) => {
+  try {
+    const dte = req.params.dte;
+
+    const cliente = await SqlDocumentoCC(dte);
+    
+    
+    
+    if (cliente.length > 0) {
+      const _correo = await SqlCliente(cliente[0].CLIENTE);
+      res.send({ result: _correo, success: true });
+    } else {
+      res.send({ result: 'digite coreo', success: true });
+    }
+
+
+  } catch (error) {
+    console.log(error)
+  }
+
+};
 module.exports = {
   postDteProveedor,
   getDteProveedor,
@@ -896,4 +970,7 @@ module.exports = {
   getCargaCPSoftland,
   getDteCliente,
   getDteObservaciones,
+  getDteDescargarPdf,
+  getCliente,
+  getProveedor
 };

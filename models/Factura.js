@@ -23,6 +23,9 @@ const Factura = sequelize.define(
     COMENTARIO_CXC: {
       type: DataTypes.STRING,
     },
+    DOC_FISCAL:{
+      type:DataTypes.STRING
+    }
   },
   { timestamps: false, hasTrigger: true }
 );

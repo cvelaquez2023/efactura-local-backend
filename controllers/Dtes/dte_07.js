@@ -11,21 +11,33 @@ const {
   autorizacionMh,
 } = require("../../config/MH");
 const { sequelize } = require("../../config/mssql");
-const { Sqlempresa } = require("../../sqltx/sql");
+const { Sqlempresa, SqlRetencionCp } = require("../../sqltx/sql");
 const { NumeroLetras } = require("../../config/letrasNumeros");
 const {
   guardarDte,
   guardarRespuestaMH,
   updateDte,
   guardarObservacionesMH,
+  guardarIdentificacion,
+  guardarEmision,
+  guardarReceptor,
+  guardarcueroDocumento,
+  guardarResumen,
+  updateFacturaDte,
 } = require("../../sqltx/Sqlguardar");
-const { emailRechazo, emailEnviado } = require("../../utils/email");
+const {
+  emailRechazo,
+  emailEnviado,
+  emailContingencia,
+} = require("../../utils/email");
 const fs = require("fs");
 const path = require("path");
+const generaPdf = require("../../utils/generaPdf");
+const { resolveObjectURL } = require("buffer");
 const postDte07 = async (req, res) => {
   const _factura = req.params.factura;
   const _empresa = req.params.id;
-
+  let estado = "";
   if (!_factura) {
     return res.send({
       messaje: "Es requerida Numero Factura",
@@ -33,6 +45,7 @@ const postDte07 = async (req, res) => {
     });
   }
   const empresa = await Sqlempresa(_empresa);
+  const HayContingencia = empresa[0].contingencia;
   if (empresa.length === 0) {
     return res.send({
       messaje: "Empresa No existe o no esta activa",
@@ -46,6 +59,7 @@ const postDte07 = async (req, res) => {
   const _cuerpo = await cuerpoDoc(_factura);
   const _resumen = await resumen(_factura);
   const _extesnsion = await extension();
+
   const dte = {
     identificacion: _identificacion,
     emisor: _emisor,
@@ -62,23 +76,11 @@ const postDte07 = async (req, res) => {
     passwordPri: process.env.DTE_PWD_PRIVADA,
     dteJson: dte,
   };
-  const dataDte = {
-    dte: _factura,
-    origen: "CLIENTE",
-    nombre: _receptor.nombre,
-    procesado: 0,
-    mudulo: "CP",
-    tipoDoc: "01",
-    selloRecibido: "ND",
-    codigoGeneracion: _identificacion.codigoGeneracion,
-    esatdo: "PENDIENTE",
-    fechaemision: _identificacion.fecEmi,
-    montoTotal: _resumen.totalIVAretenido,
-    Documento: _receptor.nit,
-    Empresa_id: _empresa,
-  };
-
-  await guardarDte(dataDte);
+  if (HayContingencia) {
+    estado = "CONTINGENCIA";
+  } else {
+    estado = "PENDIENTE";
+  }
 
   const _firma = await firmaMH(datafirma);
   if (_firma == "ERROR") {
@@ -89,114 +91,200 @@ const postDte07 = async (req, res) => {
     });
   }
 
-  const _auth = await autorizacionMh();
-  if (_auth == "ERROR") {
-    //Se envia corre
-    return res.send({
-      messaje: "Es Servidor de Autenticacion no responde de hacienda",
-      result: false,
-    });
-  } else if (_auth.estado == "RECHAZADO") {
-    return res.send({
-      messaje: "Problema con autenicacion",
-      result: false,
-    });
-  }
-  let _token = "";
-  _token = _auth.token;
-  var myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
-  myHeaders.append("Authorization", _token);
-
-  var raw = JSON.stringify({
-    ambiente: process.env.DTE_AMBIENTE,
-    idEnvio: 1,
-    version: _identificacion.version,
-    tipoDte: _identificacion.tipoDte,
-    documento: _firma,
+  const dataDte = {
+    dte: _factura,
+    origen: "PROVEEDOR",
+    nombre: _receptor.nombre,
+    procesado: 0,
+    mudulo: "CP",
+    tipoDoc: "07",
+    selloRecibido: "ND",
     codigoGeneracion: _identificacion.codigoGeneracion,
-  });
-
-  var requestOptions = {
-    method: "POST",
-    headers: myHeaders,
-    body: raw,
-    redirect: "follow",
+    estado: estado,
+    fechaemision: _identificacion.fecEmi,
+    montoTotal: _resumen.totalIVAretenido,
+    Documento: _receptor.numDocumento,
+    Empresa_id: _empresa,
+    firma:_firma
   };
 
-  const postrecepciondte = async () => {
-    try {
-      const response = await fetch(
-        "https://apitest.dtes.mh.gob.sv/fesv/recepciondte",
-        requestOptions
-      );
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.log("error", error);
+  await guardarDte(dataDte);
+  await guardarIdentificacion(_identificacion, _factura);
+  await guardarEmision(_emisor, _factura);
+  await guardarReceptor(_receptor, _factura);
+  await guardarcueroDocumento(_cuerpo, _factura, "07");
+  await guardarResumen(_resumen, _factura, "07");
+
+
+
+
+
+  if (!HayContingencia) {
+    const _auth = await autorizacionMh();
+    if (_auth == "ERROR") {
+      //Se envia corre
+      return res.send({
+        messaje: "Es Servidor de Autenticacion no responde de hacienda",
+        result: false,
+      });
+    } else if (_auth.estado == "RECHAZADO") {
+      return res.send({
+        messaje: "Problema con autenicacion",
+        result: false,
+      });
     }
-  };
+    let _token = "";
+    _token = _auth.token;
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", _token);
 
-  const _respuestaMH = await postrecepciondte();
-  await guardarRespuestaMH(_respuestaMH, _factura);
-  await updateDte(_respuestaMH, _factura);
-  await guardarObservacionesMH(_respuestaMH.observaciones, _factura);
+    var raw = JSON.stringify({
+      ambiente: process.env.DTE_AMBIENTE,
+      idEnvio: 1,
+      version: _identificacion.version,
+      tipoDte: _identificacion.tipoDte,
+      documento: _firma,
+      codigoGeneracion: _identificacion.codigoGeneracion,
+    });
 
-  const JsonCliente = {
-    identificacion: _identificacion,
-    emisor: _emisor,
-    receptor: _receptor,
-    cuerpoDocumento: _cuerpo,
-    resumen: _resumen,
-    extension: _extesnsion,
-    apendice: null,
-    respuestaMh: _respuestaMH,
-  };
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
 
-  if (_respuestaMH.estado === "RECHAZADO") {
-    try {
-      //  await fac01(_factura);
+    const postrecepciondte = async () => {
+      try {
+        const response = await fetch(
+          "https://api.dtes.mh.gob.sv/fesv/recepciondte",
+          requestOptions
+        );
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.log("error", error);
+      }
+    };
+
+    const _respuestaMH = await postrecepciondte();
+    await guardarRespuestaMH(_respuestaMH, _factura);
+    await updateDte(_respuestaMH, _factura);
+    await updateFacturaDte(_factura)
+    await guardarObservacionesMH(_respuestaMH.observaciones, _factura);
+    await guardarObservacionesMH([_respuestaMH.descripcionMsg], _factura);
+
+    const JsonCliente = {
+      identificacion: _identificacion,
+      emisor: _emisor,
+      receptor: _receptor,
+      cuerpoDocumento: _cuerpo,
+      resumen: _resumen,
+      extension: _extesnsion,
+      apendice: null,
+      respuestaMh: _respuestaMH,
+    };
+
+    if (_respuestaMH.estado === "RECHAZADO") {
+      try {
+        //  await fac01(_factura);
+        const fileName = path.join(
+          __dirname,
+          "../../storage/json/dte07/rechazados/"
+        );
+        const newfile = fileName + `${_identificacion.numeroControl}.json`;
+
+        fs.writeFileSync(newfile, JSON.stringify(JsonCliente));
+        await emailRechazo(
+          _identificacion.numeroControl,
+          "rechazosdte@drogueriauniversal.com",
+          "dte07"
+        );
+        await sequelize.query(
+          `EXEC dte.dbo.dte_ActualizarFacturaRico '${_factura}'`,
+          {
+            type: QueryTypes.SELECT,
+          }
+        );
+        res.send({
+          messaje: "Procesado en Hacienda Rechazado",
+          success: true,
+          result: "Procesado en Hacienda Rechazado",
+          errors: ["Procesado en Hacienda Rechazado"],
+          hacienda: false,
+        });
+      } catch (error) {
+        console.log(error);
+      }
+      //enviamos correo a contabilidad para que corrigan porque esta rechazado
+    } else if (_respuestaMH.estado == "PROCESADO") {
+      //enviasmos correo a cliente y pdf
+
+      await generaPdf.generaPdf07(_factura);
+      setTimeout(function () {
+        console.log("procedemos a enviarlos");
+      }, 1000);
+
       const fileName = path.join(
         __dirname,
-        "../../storage/json/dte07/rechazados/"
+        "../../storage/json/dte07/aceptados/"
       );
       const newfile = fileName + `${_identificacion.numeroControl}.json`;
 
       fs.writeFileSync(newfile, JSON.stringify(JsonCliente));
-      await emailRechazo(
+      await emailEnviado(
         _identificacion.numeroControl,
-        "cvelasquez@h2cgroup.com",
+        _receptor.correo,
         "dte07"
       );
-
+      await sequelize.query(
+        `EXEC dte.dbo.dte_ActualizarFacturaRico '${_factura}'`,
+        {
+          type: QueryTypes.SELECT,
+        }
+      );
       res.send({
-        messaje: "Procesado en Hacienda Rechazado",
-        result: true,
-        hacienda: false,
+        errors: ["Procesado en Hacienda Aceptados"],
+        result: "Procesado en Hacienda Aceptados",
+        success: true,
+        hacienda: true,
       });
-    } catch (error) {
-      console.log(error);
     }
-    //enviamos correo a contabilidad para que corrigan porque esta rechazado
-  } else if (_respuestaMH.estado == "PROCESADO") {
-    //enviasmos correo a cliente y pdf
-
-    //await fac03(_factura);
-    //await fac01(_factura);
+  } else {
+    const JsonCliente = {
+      identificacion: _identificacion,
+      documentoRelacionado: null,
+      emisor: _emisor,
+      receptor: _receptor,
+      otrosDocumentos: null,
+      ventaTercero: null,
+      cuerpoDocumento: _cuerpo,
+      resumen: _resumen,
+      extension: null,
+      apendice: _apendice,
+      firma: _firma,
+    };
     const fileName = path.join(
       __dirname,
-      "../../storage/json/dte07/aceptados/"
+      "../../storage/json/dte07/contingencia/"
     );
     const newfile = fileName + `${_identificacion.numeroControl}.json`;
 
     fs.writeFileSync(newfile, JSON.stringify(JsonCliente));
-    await emailEnviado(
+    await emailContingencia(
       _identificacion.numeroControl,
-      "cvelasquez@h2cgroup.com",
-      "dte07"
+      "disvelper@gmail.com",
+      "dte03"
+    );
+    await sequelize.query(
+      `EXEC dte.dbo.dte_ActualizarFacturaRico '${_factura}'`,
+      {
+        type: QueryTypes.SELECT,
+      }
     );
     res.send({
-      messaje: "Procesado en Hacienda Aceptados",
+      messaje: "Procesado en Contingencia",
       result: true,
       hacienda: true,
     });
@@ -222,6 +310,13 @@ const cuerpoDoc = async (documento) => {
     }
   );
 
+  
+  const _tipo = notRetencion[0].APLICACION.substring(16, 19);
+  const _documento = datos[0].CREDITO;
+  const _codRetencion = notRetencion[0].APLICACION.substring(10, 13);
+  const _prove = notRetencion[0].PROVEEDOR
+
+  const retencion = await SqlRetencionCp(_prove, _tipo, _documento, _codRetencion)
   let cuerpo = [];
   const data = {
     numItem: 1,
@@ -229,11 +324,11 @@ const cuerpoDoc = async (documento) => {
     tipoDoc: 1,
     numDocumento: docCp[0].DOCUMENTO,
     fechaEmision: moment
-      .tz(docCp[0].FECHA_DOCUMENTO, "Amercia/El_Salvador")
+      .tz(docCp[0].FECHA_DOCUMENTO, "America/El_Salvador")
       .format("YYYY-MM-DD"),
-    montoSujetoGrav: docCp[0].SUBTOTAL,
+    montoSujetoGrav: retencion[0].base,
     codigoRetencionMH: "22",
-    ivaRetenido: datos[0].MONTO_DEBITO,
+    ivaRetenido: retencion[0].monto,
     descripcion: notRetencion[0].APLICACION,
   };
   cuerpo.push(data);
@@ -258,11 +353,17 @@ const resumen = async (documento) => {
       type: QueryTypes.SELECT,
     }
   );
+  const _tipo = notRetencion[0].APLICACION.substring(16, 19);
+  const _documento = datos[0].CREDITO;
+  const _codRetencion = notRetencion[0].APLICACION.substring(10, 13);
+  const _prove = notRetencion[0].PROVEEDOR
+
+  const retencion = await SqlRetencionCp(_prove, _tipo, _documento, _codRetencion)
 
   const data = {
-    totalSujetoRetencion: docCp[0].SUBTOTAL,
-    totalIVAretenido: notRetencion[0].MONTO,
-    totalIVAretenidoLetras: NumeroLetras(notRetencion[0].MONTO),
+    totalSujetoRetencion:retencion[0].base,
+    totalIVAretenido: retencion[0].monto,
+    totalIVAretenidoLetras: NumeroLetras(retencion[0].monto),
   };
   return data;
 };

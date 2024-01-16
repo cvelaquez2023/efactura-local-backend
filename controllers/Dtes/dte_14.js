@@ -34,7 +34,7 @@ const path = require("path");
 const postDte14 = async (req, res) => {
   const _factura = req.params.factura;
   const _empresa = req.params.id;
-
+  const _form = req.body
   if (!_factura) {
     return res.send({
       messaje: "Es requerida Numero Factura",
@@ -50,11 +50,16 @@ const postDte14 = async (req, res) => {
       result: false,
     });
   }
-  const _identificacion = await identificacion("14", _empresa, _factura);
+
+
+  const _identificacion = await identificacion("14", _empresa, _form);
   const _emisior = await emisor(_empresa, "14");
-  const _subjectoExcluido = await subjectoexculido(_factura, "14");
-  const _cuerpo = await cuerpoDoc(_factura);
-  const _resumen = await resumen(_factura);
+  const _subjectoExcluido = await subjectoexculido(_form, "14");
+  const _cuerpo = await cuerpoDoc(_form);
+  const _resumen = await resumen(_form);
+
+
+
   const dte = {
     identificacion: _identificacion,
     emisor: _emisior,
@@ -63,34 +68,13 @@ const postDte14 = async (req, res) => {
     resumen: _resumen,
     apendice: null,
   };
+  
   const datafirma = {
     nit: process.env.DTE_NIT,
     activo: true,
     passwordPri: process.env.DTE_PWD_PRIVADA,
     dteJson: dte,
   };
-  const dataDte = {
-    dte: _factura,
-    origen: "CLIENTE",
-    nombre: _subjectoExcluido.nombre,
-    procesado: 0,
-    mudulo: "CP",
-    tipoDoc: "01",
-    selloRecibido: "ND",
-    codigoGeneracion: _identificacion.codigoGeneracion,
-    esatdo: "PENDIENTE",
-    fechaemision: _identificacion.fecEmi,
-    montoTotal: _resumen.totalCompra,
-    Documento: _subjectoExcluido.numDocumento,
-    Empresa_id: _empresa,
-  };
-  await guardarDte(dataDte);
-  await guardarIdentificacion(_identificacion, _factura);
-  await guardarEmision(_emisior, _factura);
-  await guardarSubjectoExcluido(_subjectoExcluido, _factura);
-  await guardarcueroDocumento(_cuerpo, _factura);
-  await guardarResumen(_resumen, _factura);
-
   const _firma = await firmaMH(datafirma);
   if (_firma == "ERROR") {
     //Se envia corre
@@ -99,6 +83,35 @@ const postDte14 = async (req, res) => {
       result: false,
     });
   }
+  const dataDte = {
+    dte: _form.aplicacion.dte,
+    origen: "PROVEEDOR",
+    nombre: _subjectoExcluido.nombre,
+    procesado: 0,
+    modulo: "CP",
+    tipoDoc: "14",
+    selloRecibido: "ND",
+    codigoGeneracion: _identificacion.codigoGeneracion,
+    estado: "PENDIENTE",
+    fechaemision: _identificacion.fecEmi,
+    montoTotal: _resumen.totalCompra,
+    Documento: _subjectoExcluido.numDocumento,
+    Empresa_id: _empresa,
+    firma: _firma,
+  };
+  await guardarDte(dataDte);
+  await guardarIdentificacion(_identificacion, _form.aplicacion.dte);
+  await guardarEmision(_emisior, _form.aplicacion.dte);
+  await guardarSubjectoExcluido(_subjectoExcluido, _form.aplicacion.dte);
+  await guardarcueroDocumento(_cuerpo, _form.aplicacion.dte);
+  await guardarResumen(_resumen, _form.aplicacion.dte);
+
+
+  res.send(dte);
+  return;
+
+
+  
   const _auth = await autorizacionMh();
   if (_auth == "ERROR") {
     //Se envia corre
@@ -209,35 +222,25 @@ const postDte14 = async (req, res) => {
   }
 };
 const subjectoexculido = async (_factura) => {
-  const docCp = await SqlDocumentoCPDte14(_factura);
-  const prove = await SqlProveedorCodigo(docCp[0].PROVEEDOR);
-  let tipoDoc = "";
-  if (prove[0].CONTRIBUYENTE.length === 9) {
-    tipoDoc = "13";
-  } else if (prove[0].CONTRIBUYENTE.length === 14) {
-    tipoDoc = "36";
-  } else {
-    tipoDoc = "37";
-  }
 
   const data = {
-    tipoDocumento: tipoDoc,
-    numDocumento: prove[0].CONTRIBUYENTE,
-    nombre: prove[0].NOMBRE,
+    tipoDocumento: _factura.tipoDocumento,
+    numDocumento: _factura.numDocumento,
+    nombre: _factura.nombre,
     codActividad: null,
     descActividad: null,
     direccion: {
-      departamento: prove[0].DEPA,
-      municipio: prove[0].MUNI,
-      complemento: prove[0].DIRECCION.replace("DETALLE:", ""),
+      departamento: _factura.direccion.departamento,
+      municipio: _factura.direccion.municipio,
+      complemento: _factura.direccion.complemento
     },
-    telefono: prove[0].TELEFONO1,
-    correo: prove[0].E_MAIL,
+    telefono: _factura.telefono,
+    correo: _factura.correo,
   };
   return data;
 };
 const cuerpoDoc = async (_factura) => {
-  const datos = await SqlDocumentoCPDte14(_factura);
+
   const _cuerpoDoc = [];
   const data = {
     numItem: 1,
@@ -245,37 +248,31 @@ const cuerpoDoc = async (_factura) => {
     cantidad: 1,
     codigo: null,
     uniMedida: 59,
-    descripcion: datos[0].APLICACION,
-    precioUni: datos[0].MONTO,
+    descripcion: _factura.aplicacion.descripcion,
+    precioUni: parseFloat(_factura.aplicacion.monto),
     montoDescu: 0,
-    compra: datos[0].MONTO * 1,
+    compra: parseFloat(_factura.aplicacion.monto),
   };
   _cuerpoDoc.push(data);
   return _cuerpoDoc;
 };
 const resumen = async (_factura) => {
-  const docCo = await SqlDocumentoCPDte14(_factura);
-  const auxCp = await sequelize.query(
-    `EXEC DTE.dbo.dte_AuxiliarCpCredito '${_factura}','RET'`,
-    {
-      type: QueryTypes.SELECT,
-    }
-  );
+
   const datos = {
-    totalCompra: docCo[0].MONTO,
+    totalCompra: parseFloat( _factura.aplicacion.monto),
     descu: 0.0,
     totalDescu: 0.0,
-    subTotal: docCo[0].MONTO,
+    subTotal: parseFloat(_factura.aplicacion.monto),
     ivaRete1: 0.0,
-    reteRenta: auxCp[0].MONTO_DEBITO,
-    totalPagar: docCo[0].MONTO - auxCp[0].MONTO_DEBITO,
-    totalLetras: NumeroLetras(docCo[0].MONTO - auxCp[0].MONTO_DEBITO) + " USD",
+    reteRenta: parseFloat(_factura.aplicacion.renta),
+    totalPagar: parseFloat(_factura.aplicacion.total),
+    totalLetras: NumeroLetras(parseFloat(_factura.aplicacion.total)) + " USD",
     condicionOperacion: 1,
     pagos: [
       {
         codigo: "01",
         montoPago: parseFloat(
-          (docCo[0].MONTO - auxCp[0].MONTO_DEBITO).toFixed(2)
+          _factura.aplicacion.total
         ),
         plazo: null,
         referencia: null,

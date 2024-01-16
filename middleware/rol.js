@@ -8,14 +8,17 @@ const { handleHttpError } = require("../utils/handleError");
 const checkRol = (rol) => (req, res, next) => {
   try {
     const { cliente } = req;
-    const rolesByUser = cliente.ROL;
+    const rolesByUser = cliente[0].rol;
     const MayrolesByUser = rolesByUser.toUpperCase();
     const checkValueRol = rol.some((rolSingle) =>
       rolesByUser.includes(rolSingle)
     );
     if (!checkValueRol) {
-      handleHttpError(res, "USER_NOT_PERMISSIONS", 403);
-      return;
+      return res.send({
+        result: {},
+        success: false,
+        errors: ["No Tiene Permiso"],
+      });
     }
     /*
     if (rol.toUpperCase() !== MayrolesByUser) {

@@ -38,70 +38,24 @@ const registerCtrl = async (req, res) => {
     };
     // validamos si el correo ya existe
 
-    const existEmail = await usuarioModel.findOne({
-      where: { email: _email },
-    });
-
-    if (!existEmail) {
-      const dataUser = await usuarioModel.create(Usuario);
-      dataUser.set("Password", undefined, { strict: false });
-      nuevo = JSON.stringify(dataUser);
-      nuevo = JSON.parse(nuevo);
-      const data = {
-        token: await tokenSign(nuevo),
-        user: nuevo,
-      };
-
-      const _usuario = {
-        nombres: _nombres,
-        email: _email,
-        rol: _rol,
-      };
-      const token = await tokenSign(_usuario);
-      let url;
-
-      if (ssl == "N") {
-        url = `http://${host}/email-confirm/${token}`;
-      } else {
-        url = `https://${host}/email-confirm/${token}`;
+    const existEmail = await sequelize.query(
+      `select email from dte.dbo.usuario where upper(email)=upper('${_email}')`,
+      {
+        type: QueryTypes.SELECT,
       }
-      verificactionLink = url;
-      //actualizamos token en la base de datos
+    );
+    console.log(existEmail)
 
-      const updateToken = await usuarioModel.update(
+
+    if (existEmail.length == 0) {
+      const crearUser = await sequelize.query(
+        `insert into dte.dbo.usuario(email,nombres,activo,rol,password,confirm) values('${_email}','${_nombres}',1,'${_rol}','${_PASSWORD}',1) `,
+
         {
-          confirm_token: token,
-          confirm: 0,
-        },
-        { where: { email: req.body.email } }
+          type: QueryTypes.SELECT,
+        }
       );
 
-      //Envio de eamil
-      //no-reply@bellmart.com
-      //let emailStatus = "Ok";
-      await transporter.sendMail({
-        from: '"Soporte H2C S.A.de C.V." <carlosrobertovelasquez@gmail.com>', // sender address
-        to: _email, // list of receivers
-        subject: "Activa tu cuenta de eFactura", // Subject line
-        html: `
-         Hola,
-         <br>
-         <br>
-         Gracias por registrarte a nuestro Sitio <span>eFACTURA</span>.Haga clic en el siguiente enlace para verificar su correo electrónico: 
-         <br>
-         <br>
-        <a href="${verificactionLink}">${verificactionLink}</a>
-        <br>
-        <br>
-        Este enlace caducará en 24 horas. Si no se registro para obtener una cuenta de <span>Bellmart</span>
-        <br>
-        <br>
-        Que estes bien.
-        <br>
-        <br>
-        <span>H2C S.A. de C.V.</span> Soporte
-        `, // html body
-      });
 
       res.send({
         results: { message: "Revise su Correo para Activar su Cuenta" },
@@ -154,8 +108,8 @@ const loginCtrl = async (req, res) => {
     if (datausuario.length == 0) {
       return res.send({
         result: {},
-        Success: false,
-        Errors: ["Cliente no existe"],
+        success: false,
+        errors: ["Usuario no existe"],
       });
     }
 
@@ -165,33 +119,35 @@ const loginCtrl = async (req, res) => {
       if (element.confirm == 0) {
         return res.send({
           result: {},
-          Success: false,
-          Errors: "Cuenta no esta Activa",
+          success: false,
+          errors: ["Cuenta no esta Activa"],
         });
       }
       const hashPassword = element.password;
 
       const check = await compare(_password, hashPassword);
       if (!check) {
-        return res.status(401).send({
+        return res.send({
           result: {},
-          Success: false,
-          Errors: "PASSWORD INVALIDO",
+          success: false,
+          errors: ["PASSWORD INVALIDO"],
         });
       }
+
 
       // datausuario[0].set("password", undefined, { strict: false });
       nuevo = JSON.stringify(datausuario[0]);
       nuevo = JSON.parse(nuevo);
 
-      const response = {
+      const result = {
         token: await tokenSign(nuevo),
         usuario: nuevo,
       };
+
       res.send({
-        response,
-        Success: true,
-        Errors: "Se envio con existo",
+        result,
+        success: true,
+        errors: "Se envio con existo",
       });
     }
   } catch (error) {
@@ -400,7 +356,6 @@ const changePass = async (req, res) => {
 const activarCliente = async (req, res) => {
   const token = req.params.token;
 
-  
   let jwtPayload;
   try {
     jwtPayload = await verifyToken(token);
@@ -481,9 +436,7 @@ const generarCodigo = async (req, res) => {
         from: '"Soporte Bellmart S.A.de C.V." <no-reply@bellmart.com>', // sender address
         to: email, // list of receivers
         subject: "Su clave de acesso es :" + code, // Subject line
-        attachments:[
-          
-        ],
+        attachments: [],
         html: `
       <div style="box-sizing:border-box;width:100%;height:100%;margin:0;padding:0;background:#f1f1f1!important;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"> 
       <table align="center" bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;max-width:650px;border:1px solid #eaeaea;table-layout:auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"> 
@@ -678,8 +631,8 @@ const editarCliente = async (req, res) => {
     });
   }
 };
-const dirClienteNew = async (req, res) => {};
-const dirClienteUpdate = async (req, res) => {};
+const dirClienteNew = async (req, res) => { };
+const dirClienteUpdate = async (req, res) => { };
 module.exports = {
   registerCtrl,
   loginCtrl,

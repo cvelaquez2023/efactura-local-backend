@@ -54,7 +54,7 @@ const NumeroLetras = (cantidad) => {
 
 function unidades(unidad) {
   var unidades = Array(
-    "UN ",
+    "UNO ",
     "DOS ",
     "TRES ",
     "CUATRO ",
