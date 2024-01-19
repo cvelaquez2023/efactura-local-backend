@@ -23,15 +23,26 @@ const SqlFacturaRet = async (factura) => {
   });
 };
 const SqlDireEmbarque = async (factura, dire) => {
-  return await sequelize.query(`EXEC dte.dbo.dte_direccionEmbarque '${factura}','${dire}'`, {
-    type: QueryTypes.SELECT,
-  });
+  return await sequelize.query(
+    `EXEC dte.dbo.dte_direccionEmbarque '${factura}','${dire}'`,
+    {
+      type: QueryTypes.SELECT,
+    }
+  );
 };
 
 const SqlCliente = async (cliente) => {
   return await sequelize.query(`EXEC dte.dbo.dte_Cliente '${cliente}'`, {
     type: QueryTypes.SELECT,
   });
+};
+const SqlDteIdentificacion = async (dte) => {
+  return await sequelize.query(
+    `select * from dte.dbo.identificacion where Dte_id=${dte}`,
+    {
+      type: QueryTypes.SELECT,
+    }
+  );
 };
 const SqlClienteExp = async (cliente) => {
   return await sequelize.query(`EXEC dte.dbo.dte_ClienteExp '${cliente}'`, {
@@ -40,7 +51,7 @@ const SqlClienteExp = async (cliente) => {
 };
 const SqlDte = async (factura) => {
   return await sequelize.query(
-    `select Dte_id,codigoGeneracion,selloRecibido,montoTotal,tipoDoc,CONVERT(nvarchar, fechaemision, 23) as fecEmi from dte.dbo.dtes where dte='${factura}'`,
+    `select Dte_id,codigoGeneracion,selloRecibido,montoTotal,tipoDoc,CONVERT(nvarchar, fechaemision, 23) as fecEmi,firma from dte.dbo.dtes where dte='${factura}'`,
     { type: QueryTypes.SELECT }
   );
 };
@@ -53,6 +64,24 @@ const SqlDteRecptor02 = async (factura) => {
 const SqlDteReceptor = async (dteId) => {
   return await sequelize.query(
     `select * from dte.dbo.receptor where  dte_id='${dteId}'`,
+    { type: QueryTypes.SELECT }
+  );
+};
+const SqlDteEmisor = async (dteId) => {
+  return await sequelize.query(
+    `select * from dte.dbo.emisor where  dte_id='${dteId}'`,
+    { type: QueryTypes.SELECT }
+  );
+};
+const SqlDteSujetoExcluido = async (dteId) => {
+  return await sequelize.query(
+    `select * from dte.dbo.subjetoExcluido where  dte_id='${dteId}'`,
+    { type: QueryTypes.SELECT }
+  );
+};
+const SqlDteCuerpo = async (dteId) => {
+  return await sequelize.query(
+    `select * from dte.dbo.cuerpoDocumento where  dte_id='${dteId}'`,
     { type: QueryTypes.SELECT }
   );
 };
@@ -127,16 +156,22 @@ const SqlDtePdf = async (dte) => {
 };
 
 const SqlRetencionCp = async (proveedor, tipo, documento, codigoRetencion) => {
-  return await sequelize.query(`EXEC DTE.dbo.dte_RetencionCP '${proveedor}','${tipo}','${documento}','${codigoRetencion}'`, {
-    type: QueryTypes.SELECT,
-  });
+  return await sequelize.query(
+    `EXEC DTE.dbo.dte_RetencionCP '${proveedor}','${tipo}','${documento}','${codigoRetencion}'`,
+    {
+      type: QueryTypes.SELECT,
+    }
+  );
 };
 
 const SqlProveedor = async (contribuyente) => {
-  return await sequelize.query(`EXEC DTE.dbo.dte_proveedor '${contribuyente}'`, {
-    type: QueryTypes.SELECT,
-  });
-}
+  return await sequelize.query(
+    `EXEC DTE.dbo.dte_proveedor '${contribuyente}'`,
+    {
+      type: QueryTypes.SELECT,
+    }
+  );
+};
 module.exports = {
   Sqlempresa,
   SqlFactura,
@@ -157,5 +192,9 @@ module.exports = {
   SqlFacturaRet,
   SqlDireEmbarque,
   SqlRetencionCp,
-  SqlProveedor
+  SqlProveedor,
+  SqlDteIdentificacion,
+  SqlDteEmisor,
+  SqlDteSujetoExcluido,
+  SqlDteCuerpo,
 };

@@ -664,7 +664,7 @@ const getDteObservaciones = async (req, res) => {
     res.send({ results: error.message, result: false });
   }
 };
-const getDteProveedorId = async (req, res) => { };
+const getDteProveedorId = async (req, res) => {};
 const putDteProveedor = async (req, res) => {
   const idDte = req.params.id2;
   const _selloRecibido = req.params.id3;
@@ -683,7 +683,6 @@ const putDteProveedor = async (req, res) => {
 };
 
 const cargarCPSoftland = async (req, res) => {
-
   try {
     const _dteData = await sequelize.query(
       `select dte,nombre,CONVERT(varchar,fechaemision,103) as fechaemision,montoTotal,documento,tipoDoc,selloRecibido from dte.dbo.dtes where Dte_id=${req.body.id}`,
@@ -691,7 +690,7 @@ const cargarCPSoftland = async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
-    console.log(_dteData)
+    console.log(_dteData);
 
     const _dte = _dteData[0].dte;
     const _tipoDoc = _dteData[0].tipoDoc;
@@ -758,7 +757,6 @@ const getCargaCPSoftland = async (req, res) => {
       }
     );
 
-
     const _dte = _dteData[0].dte;
     const _tipoDoc = _dteData[0].tipoDoc;
     const _selloRecibido = _dteData[0].selloRecibido;
@@ -795,7 +793,6 @@ const getCargaCPSoftland = async (req, res) => {
       }
     );
 
-
     const _resuTotalNoSuj = _resumen[0].totalNoSuj;
     const _resuTotalExenta = _resumen[0].totalExenta;
     const _resuTotalGravada = _resumen[0].totalGravada;
@@ -817,7 +814,7 @@ const getCargaCPSoftland = async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
-    let _Impuesto1 = "";
+    let _Impuesto1 = "0.0";
     let _fovial = "0.0";
     let _cotrans = "0.0";
     for (let x = 0; x < _Tributoresumen.length; x++) {
@@ -845,7 +842,6 @@ const getCargaCPSoftland = async (req, res) => {
       subQuery: false,
     });
 
-
     //Obtenemos codigo de porveedor
     const _proveedor = await sequelize.query(
       `EXEC dte.dbo.dte_proveedor '${_nitProveedor}'`,
@@ -863,13 +859,9 @@ const getCargaCPSoftland = async (req, res) => {
       subQuery: false,
     });
 
-
     const _dataProveeCondPago = _datoProveedor.CONDICION_PAGO;
     const _dataProveeCodImpuesto = _datoProveedor.CODIGO_IMPUESTO;
     const _dataProveeCodMoneda = _datoProveedor.MONEDA;
-
-
-
 
     const _condicionPago = await condicionPagoModel.findOne({
       where: { CONDICION_PAGO: _dataProveeCondPago },
@@ -895,18 +887,27 @@ const getCargaCPSoftland = async (req, res) => {
     );
 
     //Preparamos la data para envi
+    let _monto, _saldo, _subtotal, _impueto1, _impuesto2;
+    if (_tipoDoc === "14") {
+      _monto = _resuTotalPagar;
+      _saldo = _resuTotalPagar;
+      _subtotal = _resuTotalPagar;
+    } else {
+      _monto = _resuMontoTotalOperacion;
+      _saldo = _resuMontoTotalOperacion;
+      _subtotal = _resuTotalGravada;
+    }
     const data = {
       proveedor: _datoProveedor.PROVEEDOR,
-
       nombre: _nombre,
       dte: _dte,
       codigoGeneracion: _codigoGeneracion,
       TipoDoc: _tipo,
       subTipoDoc: _tipoDoc,
       fechaDoc: _fecha,
-      monto: _resuMontoTotalOperacion,
-      saldo: _resuMontoTotalOperacion,
-      subtotal: _resuTotalGravada,
+      monto: _monto,
+      saldo: _saldo,
+      subtotal: _subtotal,
       impuesto1: _Impuesto1,
       impuesto2: _resuTotalExenta + _resuTotalNoSuj,
       fovial: _fovial,
@@ -944,24 +945,61 @@ const getDteDescargarPdf = async (req, res) => {
 const getCliente = async (req, res) => {
   try {
     const dte = req.params.dte;
-
     const cliente = await SqlDocumentoCC(dte);
-    
-    
-    
     if (cliente.length > 0) {
       const _correo = await SqlCliente(cliente[0].CLIENTE);
       res.send({ result: _correo, success: true });
     } else {
-      res.send({ result: 'digite coreo', success: true });
+      res.send({ result: "digite coreo", success: true });
     }
-
-
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
 };
+const getConsecutivo = async (req, res) => {
+  try {
+    const consecutivo = req.params.consecutivo;
+    const _con = await sequelize.query(
+      `EXEC dte.dbo.dte_Consecutivo '${consecutivo}'`,
+      {
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+    res.send({ result: _con, success: true });
+  } catch (error) {
+    console.log(error);
+  }
+};
+const putConsecutivo = async (req, res) => {
+  try {
+    const consecutivo = req.params.consecutivo;
+    const _con = await sequelize.query(
+      `EXEC dte.dbo.dte_Consecutivo '${consecutivo}'`,
+      {
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    const _cons01 = _con[0].ULTIMO_VALOR.substring(0, 19);
+    const _cons02 = _con[0].ULTIMO_VALOR.substring(19, 34);
+    const _valor = parseFloat(_cons02) + 1;
+    const strValor = _valor.toString();
+    const _newValor = strValor.padStart(15, "0");
+    const dteNew = _cons01 + _newValor;
+
+    const _upadte = await sequelize.query(
+      `EXEC dte.dbo.dte_ConsecutivoUpdate '${consecutivo}','${dteNew}'`,
+      {
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    res.send({ result: dteNew, success: true });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 module.exports = {
   postDteProveedor,
   getDteProveedor,
@@ -972,5 +1010,7 @@ module.exports = {
   getDteObservaciones,
   getDteDescargarPdf,
   getCliente,
-  getProveedor
+  getProveedor,
+  getConsecutivo,
+  putConsecutivo,
 };

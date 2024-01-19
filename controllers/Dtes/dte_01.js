@@ -399,6 +399,67 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
     return _cuerpoDoc;
 
   }
+  if(tipo===51){
+    const dataFacLinea = await sequelize.query(
+      `EXEC dte.dbo.dte_FacturaLinea51 '${_factura}'`,
+      { type: QueryTypes.SELECT }
+    );
+
+    const _cuerpoDoc = [];
+    let totalLinea = 0;
+    let totalDescuento = 0;
+    let totalImpuesto1 = 0;
+    let ventatotalGravada = 0;
+    for (let index = 0; index < dataFacLinea.length; index++) {
+      const element = dataFacLinea[index];
+      const precio =
+        element.PRECIO_UNITARIO * parseFloat(process.env.DTE_IMPUESTO);
+      const decLinea =
+        element.DESC_TOT_LINEA * parseFloat(process.env.DTE_IMPUESTO);
+      const decVolumen =
+        element.DESCUENTO_VOLUMEN * parseFloat(process.env.DTE_IMPUESTO);
+      const totalDesc = parseFloat(decLinea + decVolumen);
+      const cantidad = element.CANTIDAD;
+      const precioTotal = precio * cantidad;
+      const ventagravada = precioTotal - totalDesc;
+      let _tributo = null;
+
+      const data = {
+        numItem: element.LINEA,
+        tipoItem: 1,
+        numeroDocumento: null,
+        codigo: element.ARTICULO,
+        codTributo: null,
+        descripcion:
+          element.DESCRIPCION,
+        cantidad: element.CANTIDAD,
+        uniMedida: 59,
+        precioUni: parseFloat(precio.toFixed(4)),
+        montoDescu: parseFloat(totalDesc.toFixed(4)),
+        ventaNoSuj: 0.0,
+        ventaExenta: 0.0,
+        ventaGravada: parseFloat(ventagravada.toFixed(4)),
+        tributos: _tributo,
+        psv: 0.0,
+        noGravado: 0,
+        ivaItem: parseFloat(element.TOTAL_IMPUESTO1.toFixed(4)),
+        lote: 'ND',
+      };
+      const _totalLinea = precioTotal;
+      const _totalDescuento = totalDesc;
+      const _totalImpuesto1 = element.TOTAL_IMPUESTO1;
+      const _totalVentaGRavada = precioTotal - totalDesc;
+      totalLinea = totalLinea + _totalLinea;
+      totalDescuento = totalDescuento + _totalDescuento;
+      totalImpuesto1 = totalImpuesto1 + _totalImpuesto1;
+
+      ventatotalGravada = ventatotalGravada + _totalVentaGRavada;
+      _cuerpoDoc.push(data);
+    }
+
+    const _totalPagar = totalLinea - totalDescuento;
+    return _cuerpoDoc;
+  }
   else {
     const dataFacLinea = await sequelize.query(
       `EXEC dte.dbo.dte_FacturaLinea '${_factura}'`,
@@ -467,7 +528,7 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
 };
 
 const cuerpoDoclote = async (_factura, obser, tipo) => {
-  if (tipo == 47) {
+  if (tipo === 47) {
     const dataFacLinea = await sequelize.query(
       `EXEC dte.dbo.dte_FacturaLineaLicitaciones '${_factura}'`,
       { type: QueryTypes.SELECT }
@@ -530,7 +591,69 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
     const _totalPagar = totalLinea - totalDescuento;
     return _cuerpoDoc;
 
-  } else {
+  }
+  if(tipo===51){
+    const dataFacLinea = await sequelize.query(
+      `EXEC dte.dbo.dte_FacturaLinea51 '${_factura}'`,
+      { type: QueryTypes.SELECT }
+    );
+
+    const _cuerpoDoc = [];
+    let totalLinea = 0;
+    let totalDescuento = 0;
+    let totalImpuesto1 = 0;
+    let ventatotalGravada = 0;
+    for (let index = 0; index < dataFacLinea.length; index++) {
+      const element = dataFacLinea[index];
+      const precio =
+        element.PRECIO_UNITARIO * parseFloat(process.env.DTE_IMPUESTO);
+      const decLinea =
+        element.DESC_TOT_LINEA * parseFloat(process.env.DTE_IMPUESTO);
+      const decVolumen =
+        element.DESCUENTO_VOLUMEN * parseFloat(process.env.DTE_IMPUESTO);
+      const totalDesc = parseFloat(decLinea + decVolumen);
+      const cantidad = element.CANTIDAD;
+      const precioTotal = precio * cantidad;
+      const ventagravada = precioTotal - totalDesc;
+      let _tributo = null;
+
+      const data = {
+        numItem: element.LINEA,
+        tipoItem: 1,
+        numeroDocumento: null,
+        codigo: element.ARTICULO,
+        codTributo: null,
+        descripcion:
+          element.DESCRIPCION,
+        cantidad: element.CANTIDAD,
+        uniMedida: 59,
+        precioUni: parseFloat(precio.toFixed(4)),
+        montoDescu: parseFloat(totalDesc.toFixed(4)),
+        ventaNoSuj: 0.0,
+        ventaExenta: 0.0,
+        ventaGravada: parseFloat(ventagravada.toFixed(4)),
+        tributos: _tributo,
+        psv: 0.0,
+        noGravado: 0,
+        ivaItem: parseFloat(element.TOTAL_IMPUESTO1.toFixed(4)),
+        lote: 'ND',
+      };
+      const _totalLinea = precioTotal;
+      const _totalDescuento = totalDesc;
+      const _totalImpuesto1 = element.TOTAL_IMPUESTO1;
+      const _totalVentaGRavada = precioTotal - totalDesc;
+      totalLinea = totalLinea + _totalLinea;
+      totalDescuento = totalDescuento + _totalDescuento;
+      totalImpuesto1 = totalImpuesto1 + _totalImpuesto1;
+
+      ventatotalGravada = ventatotalGravada + _totalVentaGRavada;
+      _cuerpoDoc.push(data);
+    }
+
+    const _totalPagar = totalLinea - totalDescuento;
+    return _cuerpoDoc;
+  }
+  else {
     const dataFacLinea = await sequelize.query(
       `EXEC dte.dbo.dte_FacturaLinea '${_factura}'`,
       { type: QueryTypes.SELECT }

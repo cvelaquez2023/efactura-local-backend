@@ -33,19 +33,16 @@ const firmaMH = async (datos) => {
 };
 const autorizacionMh = async () => {
   try {
-    const response = await fetch(
-      `https://api.dtes.mh.gob.sv/seguridad/auth`,
-      {
-        body: new URLSearchParams({
-          user: process.env.DTE_USER_API,
-          pwd: process.env.DTE_PWD_API,
-        }),
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-        method: "POST",
-      }
-    );
+    const response = await fetch(`https://api.dtes.mh.gob.sv/seguridad/auth`, {
+      body: new URLSearchParams({
+        user: process.env.DTE_USER_API,
+        pwd: process.env.DTE_PWD_API,
+      }),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      method: "POST",
+    });
     const data = await response.json();
     return data.body;
   } catch (error) {
@@ -89,9 +86,7 @@ const identificacion = async (
         break;
     }
 
-
     const datosFactura = await datosFac(_factura, _tipoDoc);
-
 
     //CONSULTAMOS EL SUBTIPO DEL DOCUMENTO
     //consultamos el cliente con los datos
@@ -107,15 +102,13 @@ const identificacion = async (
       _hora = datosFactura[0].HORA;
     }
     if (_tipoDoc === "14") {
-      _fechaNueva = _factura.aplicacion.fecha
+      _fechaNueva = _factura.aplicacion.fecha;
       // fecha actual
       let date = new Date();
-      let hora = date.getHours();
-      let minu = date.getMinutes();
-      _hora = hora + ':' + minu;
-    }
-    else {
-
+      let hora = date.getHours().toString().padStart(2, "0");
+      let minu = date.getMinutes().toString().padStart(2, "0");
+      _hora = hora + ":" + minu + ":" + "00";
+    } else {
       _fechaNueva = datosFactura[0].FECHA_DOCUMENTO;
       /*
       _fechaNueva = moment
@@ -123,13 +116,12 @@ const identificacion = async (
         .format("YYYY-MM-DD");
       */
       _hora = datosFactura[0].CreateDate;
-
     }
 
     //CONSTRUIMOS EL SEGMENTO IDENTIFICACION
-    let _demoFa = ""
+    let _demoFa = "";
     if (_tipoDoc === "14") {
-      _demoFa = _factura.aplicacion.dte
+      _demoFa = _factura.aplicacion.dte;
     } else {
       _demoFa = _factura;
     }
@@ -368,17 +360,16 @@ const emisor = async (_empresa, tipoDte) => {
 };
 const receptor = async (_factura, tipoDte) => {
   const data = await SqlFactura(_factura);
-  let cliente = ""
+  let cliente = "";
   if (data.length > 0) {
-    cliente = data[0].CLIENTE
+    cliente = data[0].CLIENTE;
   } else {
-    const d = await SqlDocumentoCC(_factura)
+    const d = await SqlDocumentoCC(_factura);
     if (d[0].CLI_CORPORAC_ASOC === null) {
-      cliente = d[0].CLIENTE
+      cliente = d[0].CLIENTE;
     } else {
-      cliente = d[0].CLIENTE_REPORTE
+      cliente = d[0].CLIENTE_REPORTE;
     }
-
   }
 
   const dataCliente = await sequelize.query(
@@ -389,8 +380,7 @@ const receptor = async (_factura, tipoDte) => {
   );
   if (tipoDte === "03" || tipoDte === "05") {
     let _correo = dataCliente[0].CORREODTE;
-    let _nit = dataCliente[0].CONTRIBUYENTE
-
+    let _nit = dataCliente[0].CONTRIBUYENTE;
 
     const receptor = {
       nit: _nit.trim(),
@@ -625,7 +615,6 @@ const receptor07 = async (_factura) => {
 };
 
 const apendice = async (_factura, tipo, subtipo) => {
-
   try {
     const data = await SqlFactura(_factura);
     if (data.length > 0) {
@@ -637,51 +626,54 @@ const apendice = async (_factura, tipo, subtipo) => {
       const apend6 = data[0].CLIENTE;
       const apend7 = data[0].PEDIDO;
       //Vemos la Direccion de Embarque del cliente
-      const direEmbrque = await SqlDireEmbarque(data[0].CLIENTE, data[0].DIREC_EMBARQUE)
+      const direEmbrque = await SqlDireEmbarque(
+        data[0].CLIENTE,
+        data[0].DIREC_EMBARQUE
+      );
 
       const apend8 = direEmbrque[0].DESCRIPCION.replace("DETALLE:", "");
       const _apendice = [];
       if (tipo == 47) {
         const apen11 = {
-          campo: 'VENDEDOR',
-          etiqueta: 'VENDEDOR',
-          valor: apen1
-        }
+          campo: "VENDEDOR",
+          etiqueta: "VENDEDOR",
+          valor: apen1,
+        };
         const apen12 = {
-          campo: 'NOMBRE',
-          etiqueta: 'NOMBRE',
-          valor: apend2
-        }
+          campo: "NOMBRE",
+          etiqueta: "NOMBRE",
+          valor: apend2,
+        };
         const apen13 = {
-          campo: 'OBSERVACIONES',
-          etiqueta: 'OBSERVACIONES',
-          valor: ''
-        }
+          campo: "OBSERVACIONES",
+          etiqueta: "OBSERVACIONES",
+          valor: "",
+        };
         const apen14 = {
-          campo: 'PAGO',
-          etiqueta: 'PAGO',
-          valor: apend4
-        }
+          campo: "PAGO",
+          etiqueta: "PAGO",
+          valor: apend4,
+        };
         const apen15 = {
-          campo: 'DESCRIPCION',
-          etiqueta: 'DESCRIPCION',
-          valor: apend5
-        }
+          campo: "DESCRIPCION",
+          etiqueta: "DESCRIPCION",
+          valor: apend5,
+        };
         const apen16 = {
-          campo: 'CLIENTE',
-          etiqueta: 'CLIENTE',
-          valor: apend6
-        }
+          campo: "CLIENTE",
+          etiqueta: "CLIENTE",
+          valor: apend6,
+        };
         const apen17 = {
-          campo: 'PEDIDO',
-          etiqueta: 'PEDIDO',
-          valor: apend7
-        }
+          campo: "PEDIDO",
+          etiqueta: "PEDIDO",
+          valor: apend7,
+        };
         const apen18 = {
-          campo: 'DIRECION',
-          etiqueta: 'DIRECION',
-          valor: apend8
-        }
+          campo: "DIRECION",
+          etiqueta: "DIRECION",
+          valor: apend8,
+        };
         _apendice.push(apen11);
         _apendice.push(apen12);
         _apendice.push(apen13);
@@ -695,41 +687,41 @@ const apendice = async (_factura, tipo, subtipo) => {
       }
       if (tipo === "05") {
         const apen11 = {
-          campo: 'VENDEDOR',
-          etiqueta: 'VENDEDOR',
-          valor: apen1
-        }
+          campo: "VENDEDOR",
+          etiqueta: "VENDEDOR",
+          valor: apen1,
+        };
         const apen12 = {
-          campo: 'NOMBRE',
-          etiqueta: 'NOMBRE',
-          valor: apend2
-        }
+          campo: "NOMBRE",
+          etiqueta: "NOMBRE",
+          valor: apend2,
+        };
         const apen13 = {
-          campo: 'OBSERVACIONES',
-          etiqueta: 'OBSERVACIONES',
-          valor: apend3
-        }
+          campo: "OBSERVACIONES",
+          etiqueta: "OBSERVACIONES",
+          valor: apend3,
+        };
         const apen14 = {
-          campo: 'PAGO',
-          etiqueta: 'PAGO',
-          valor: apend4
-        }
+          campo: "PAGO",
+          etiqueta: "PAGO",
+          valor: apend4,
+        };
         const apen15 = {
-          campo: 'DESCRIPCION',
-          etiqueta: 'DESCRIPCION',
-          valor: apend5
-        }
+          campo: "DESCRIPCION",
+          etiqueta: "DESCRIPCION",
+          valor: apend5,
+        };
         const apen16 = {
-          campo: 'CLIENTE',
-          etiqueta: 'CLIENTE',
-          valor: apend6
-        }
+          campo: "CLIENTE",
+          etiqueta: "CLIENTE",
+          valor: apend6,
+        };
 
         const apen18 = {
-          campo: 'DIRECION',
-          etiqueta: 'DIRECION',
-          valor: apend8
-        }
+          campo: "DIRECION",
+          etiqueta: "DIRECION",
+          valor: apend8,
+        };
         _apendice.push(apen11);
         _apendice.push(apen12);
         _apendice.push(apen13);
@@ -741,47 +733,46 @@ const apendice = async (_factura, tipo, subtipo) => {
         return _apendice;
       }
       if (subtipo === "03" || subtipo === "01") {
-
         const apen11 = {
-          campo: 'VENDEDOR',
-          etiqueta: 'VENDEDOR',
-          valor: apen1
-        }
+          campo: "VENDEDOR",
+          etiqueta: "VENDEDOR",
+          valor: apen1,
+        };
         const apen12 = {
-          campo: 'NOMBRE',
-          etiqueta: 'NOMBRE',
-          valor: apend2
-        }
+          campo: "NOMBRE",
+          etiqueta: "NOMBRE",
+          valor: apend2,
+        };
         const apen13 = {
-          campo: 'OBSERVACIONES',
-          etiqueta: 'OBSERVACIONES',
-          valor: apend3
-        }
+          campo: "OBSERVACIONES",
+          etiqueta: "OBSERVACIONES",
+          valor: apend3,
+        };
         const apen14 = {
-          campo: 'PAGO',
-          etiqueta: 'PAGO',
-          valor: apend4
-        }
+          campo: "PAGO",
+          etiqueta: "PAGO",
+          valor: apend4,
+        };
         const apen15 = {
-          campo: 'DESCRIPCION',
-          etiqueta: 'DESCRIPCION',
-          valor: apend5
-        }
+          campo: "DESCRIPCION",
+          etiqueta: "DESCRIPCION",
+          valor: apend5,
+        };
         const apen16 = {
-          campo: 'CLIENTE',
-          etiqueta: 'CLIENTE',
-          valor: apend6
-        }
+          campo: "CLIENTE",
+          etiqueta: "CLIENTE",
+          valor: apend6,
+        };
         const apen17 = {
-          campo: 'PEDIDO',
-          etiqueta: 'PEDIDO',
-          valor: apend7
-        }
+          campo: "PEDIDO",
+          etiqueta: "PEDIDO",
+          valor: apend7,
+        };
         const apen18 = {
-          campo: 'DIRECION',
-          etiqueta: 'DIRECION',
-          valor: apend8
-        }
+          campo: "DIRECION",
+          etiqueta: "DIRECION",
+          valor: apend8,
+        };
         _apendice.push(apen11);
         _apendice.push(apen12);
         _apendice.push(apen13);
@@ -793,56 +784,55 @@ const apendice = async (_factura, tipo, subtipo) => {
 
         return _apendice;
       }
-
     } else {
       const data = await SqlDocumentoCC(_factura);
       const apen1 = data[0].VENDEDOR;
       const apend2 = data[0].NOMBREVENDEDOR;
-      const apend6 = data[0].CLIENTE + '-' + data[0].NOMBRE;
+      const apend6 = data[0].CLIENTE + "-" + data[0].NOMBRE;
 
       //Vemos la Direccion de Embarque del cliente
 
       const _apendice = [];
       const apen11 = {
-        campo: 'VENDEDOR',
-        etiqueta: 'VENDEDOR',
-        valor: apen1
-      }
+        campo: "VENDEDOR",
+        etiqueta: "VENDEDOR",
+        valor: apen1,
+      };
       const apen12 = {
-        campo: 'NOMBRE',
-        etiqueta: 'NOMBRE',
-        valor: apend2
-      }
+        campo: "NOMBRE",
+        etiqueta: "NOMBRE",
+        valor: apend2,
+      };
       const apen13 = {
-        campo: 'OBSERVACIONES',
-        etiqueta: 'OBSERVACIONES',
-        valor: 'ND'
-      }
+        campo: "OBSERVACIONES",
+        etiqueta: "OBSERVACIONES",
+        valor: "ND",
+      };
       const apen14 = {
-        campo: 'PAGO',
-        etiqueta: 'PAGO',
-        valor: 'ND'
-      }
+        campo: "PAGO",
+        etiqueta: "PAGO",
+        valor: "ND",
+      };
       const apen15 = {
-        campo: 'DESCRIPCION',
-        etiqueta: 'DESCRIPCION',
-        valor: 'ND'
-      }
+        campo: "DESCRIPCION",
+        etiqueta: "DESCRIPCION",
+        valor: "ND",
+      };
       const apen16 = {
-        campo: 'CLIENTE',
-        etiqueta: 'CLIENTE',
-        valor: apend6
-      }
+        campo: "CLIENTE",
+        etiqueta: "CLIENTE",
+        valor: apend6,
+      };
       const apen17 = {
-        campo: 'PEDIDO',
-        etiqueta: 'PEDIDO',
-        valor: 'ND'
-      }
+        campo: "PEDIDO",
+        etiqueta: "PEDIDO",
+        valor: "ND",
+      };
       const apen18 = {
-        campo: 'DIRECION',
-        etiqueta: 'DIRECION',
-        valor: 'ND'
-      }
+        campo: "DIRECION",
+        etiqueta: "DIRECION",
+        valor: "ND",
+      };
       _apendice.push(apen11);
       _apendice.push(apen12);
       _apendice.push(apen13);
@@ -853,14 +843,11 @@ const apendice = async (_factura, tipo, subtipo) => {
       _apendice.push(apen18);
 
       return _apendice;
-
     }
-
-
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-}
+};
 module.exports = {
   firmaMH,
   autorizacionMh,
@@ -868,5 +855,5 @@ module.exports = {
   emisor,
   receptor,
   receptor07,
-  apendice
+  apendice,
 };

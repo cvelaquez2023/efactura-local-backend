@@ -478,4 +478,134 @@ const generaPdf05 = async (datos) => {
       console.log(error);
     });
 };
-module.exports = { generaPdf, generaPdf07,generaPdf05 };
+const generaPdf14 = async (datos) => {
+  const filename = datos.replace("-24-", "-");
+  const filePdf = datos.replace("-24-", "-") + ".pdf";
+
+  const _dte = await sequelize.query(
+    `select * from dte.dbo.dtes where  dte='${datos}'`,
+    { type: QueryTypes.SELECT }
+  );
+
+  const _idDte = _dte[0].Dte_Id;
+
+  const _dteSujetoExcluido = await sequelize.query(
+    `SELECT tipoDocumento,nit, nombre,codActividad,descActividad,direccion_depa,direccion_muni,direccion_compl,telefono,correo  FROM dte.dbo.subjetoExcluido  WHERE dte_Id=${_idDte} `,
+    { type: QueryTypes.SELECT }
+  );
+
+  // detalle de dte Cuerpo
+  const _dteCuerpo = await sequelize.query(
+    `SELECT numItem,tipoItem,cantidad,codigo,uniMedida,descripcion,precioUni,montoDescu,compra  FROM dte.dbo.cuerpoDocumento  WHERE dte_Id=${_idDte} `,
+    { type: QueryTypes.SELECT }
+  );
+
+  const _dteResumen = await sequelize.query(
+    `select totalCompra,descuExenta,totalDescu, subTotal,ivaRete1,reteRenta,totalPagar,totalLetras,condicionOperacion from dte.dbo.resumen where  dte_Id=${_idDte}`,
+    { type: QueryTypes.SELECT }
+  );
+  const _dteReceptor = await sequelize.query(
+    `select * from dte.dbo.receptor where  dte_Id=${_idDte}`,
+    { type: QueryTypes.SELECT }
+  );
+  const datosQr = {
+    fechaEmi: moment
+      .tz(_dte[0].fechaHoraGeneracion, "America/El_Salvador")
+      .format("YYYY-MM-DD"),
+    codGen: _dte[0].codigoGeneracion,
+    ambiente: process.env.DTE_AMBIENTE,
+  };
+
+  await rqcode(datosQr);
+
+  const html = fs.readFileSync(
+    path.join(__dirname, "../template/index14.html"),
+    "utf-8"
+  );
+
+  let array = [];
+  let item = 0;
+
+  _dteCuerpo.forEach((d) => {
+    item = item + 1;
+    const prod = {
+      numItem: item,
+      tipoItem: d.tipoItem,
+      cantidad: d.cantidad,
+      codigo: null,
+      uniMedida: "UNIDAD",
+      descripcion: d.descripcion,
+      precioUni: d.precioUni.toFixed(2),
+      montoDescu: d.montoDescu.toFixed(2),
+      compra: d.compra.toFixed(2),
+    };
+    array.push(prod);
+  });
+
+  let tipo,
+    dir = "";
+  if (_dte[0].tipoDoc === "03") {
+    tipo = "COMPROBANTE CREDITO FISCAL";
+    dir = "dte03";
+  }
+  if (_dte[0].tipoDoc === "01") {
+    tipo = "COMPROBANTE CONSUMIDOR FINAL";
+    dir = "dte01";
+  }
+  if (_dte[0].tipoDoc === "05") {
+    tipo = "COMPROBANTE NOTA DE CREDITO";
+    dir = "dte05";
+  }
+  if (_dte[0].tipoDoc === "07") {
+    tipo = "COMPROBANTE DE RETENCIÓN";
+    dir = "dte07";
+  }
+  if (_dte[0].tipoDoc === "14") {
+    tipo = "FACTURA SUJETO EXCLUIDO";
+    dir = "dte14";
+  }
+
+
+
+  const obj = {
+    tipoDoc: tipo,
+    codigoGeneracion: _dte[0].codigoGeneracion,
+    numeroControl: _dte[0].Dte,
+    selloRecibido: _dte[0].selloRecibido,
+    fechaHoraGeneracion: moment
+      .tz(_dte[0].fechaHoraGeneracion, "America/El_Salvador")
+      .format("DD-MM-YYYY HH:MM:SS"),
+    nombre: _dteSujetoExcluido[0].nombre,
+    nit: _dteSujetoExcluido[0].nit,
+    descActividad: _dteSujetoExcluido[0].descActividad,
+    direccion_compl: _dteSujetoExcluido[0].direccion_compl,
+    telefono: _dteSujetoExcluido[0].telefono,
+    correo: _dteSujetoExcluido[0].correo,
+    prodlist: array,
+    totalCompras: _dteResumen[0].totalCompra.toFixed(2),
+    descu: 0.0,
+    subTotal: _dteResumen[0].subTotal.toFixed(2),
+    ivaRete1: _dteResumen[0].ivaRete1.toFixed(2),
+    reteRenta: _dteResumen[0].reteRenta.toFixed(2),
+    totalPagar: _dteResumen[0].totalPagar.toFixed(2),
+    totalLetras: _dteResumen[0].totalLetras,
+  };
+
+  const document = {
+    html: html,
+    data: {
+      products: obj,
+    },
+    path: `../backend/storage/pdf/${dir}/` + filePdf,
+  };
+
+  await pdf
+    .create(document, options)
+    .then((res) => {
+      console.log("respuesta", res);
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+};
+module.exports = { generaPdf, generaPdf07, generaPdf05, generaPdf14 };

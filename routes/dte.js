@@ -10,6 +10,8 @@ const {
   getDteDescargarPdf,
   getCliente,
   getProveedor,
+  getConsecutivo,
+  putConsecutivo,
 } = require("../controllers/dte");
 const authMiddleware = require("../middleware/session");
 const checkRol = require("../middleware/rol");
@@ -35,6 +37,8 @@ router.put("/:id2/:id3", putDteProveedor);
 router.post("/", postDteProveedor);
 router.post("/cp/", cargarCPSoftland);
 router.get("/descargar/:dte", getDteDescargarPdf);
-router.get("/clientes/:dte", getCliente)
+router.get("/clientes/:dte", getCliente);
+router.get("/consecutivo/:consecutivo", getConsecutivo);
+router.post("/consUpdate/:consecutivo", putConsecutivo);
 
 module.exports = router;

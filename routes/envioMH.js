@@ -20,7 +20,7 @@ router.post("/dte01/:factura/:id", postDte01);
 router.post("/dte04/:factura/:id", postDte04);
 router.post("/dte05/:factura/:id", postDte05);
 router.post("/dte11/:factura/:id", postDte11);
-router.post("/dte14/:factura/:id", postDte14);
+router.post("/dte14/:id", postDte14);
 router.post("/dte07/:factura/:id", postDte07);
 router.post(
   "/invalidacion",

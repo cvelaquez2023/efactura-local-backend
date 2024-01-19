@@ -1,11 +1,17 @@
 const { QueryTypes } = require("sequelize");
 const { sequelize } = require("../config/mssql");
-const { SqlDeleteDts, SqlDte, SqlFactura, SqlDireEmbarque, SqlCliente, SqlDocumentoCC } = require("./sql");
+const {
+  SqlDeleteDts,
+  SqlDte,
+  SqlFactura,
+  SqlDireEmbarque,
+  SqlCliente,
+  SqlDocumentoCC,
+} = require("./sql");
 const moment = require("moment");
 
 const guardarDte = async (datos) => {
   try {
-
     const _fecha = moment
       .tz(datos.FECHAFULL, "America/El_Salvador")
       .format("YYYY-MM-DD HH:mm:ss");
@@ -208,7 +214,7 @@ const guardarSubjectoExcluido = async (receptor, factura) => {
   }
 };
 
-const guardarventaTercero = async (datos) => { };
+const guardarventaTercero = async (datos) => {};
 const guardarcueroDocumento = async (_cuerpoDoc, factura, tipo) => {
   const id = await dte(factura);
   try {
@@ -227,86 +233,85 @@ const guardarcueroDocumento = async (_cuerpoDoc, factura, tipo) => {
       codigoRetencionMH,
       ivaRetenido,
       numDocumento,
-      codigo, cantidad,
+      codigo,
+      cantidad,
       uniMedida,
       precioUni,
       montoDescu,
       lote,
-      compra
-      ;
+      compra;
 
     for (let xx = 0; xx < _cuerpoDoc.length; xx++) {
       const element = _cuerpoDoc[xx];
 
       if (element.compra === undefined) {
-        compra = 0.0
+        compra = 0.0;
       } else {
-        compra = element.compra
+        compra = element.compra;
       }
       if (element.lote === undefined) {
-        lote = 'ND'
+        lote = "ND";
       } else {
-        lote = element.lote
+        lote = element.lote;
       }
       if (element.montoDescu === undefined) {
-        montoDescu = 0.0
+        montoDescu = 0.0;
       } else {
-        montoDescu = element.montoDescu
+        montoDescu = element.montoDescu;
       }
       if (element.precioUni === undefined) {
-        precioUni = 0.0
+        precioUni = 0.0;
       } else {
-        precioUni = element.precioUni
+        precioUni = element.precioUni;
       }
       if (element.uniMedida === undefined) {
-        uniMedida = 0.0
+        uniMedida = 0.0;
       } else {
-        uniMedida = element.uniMedida
+        uniMedida = element.uniMedida;
       }
 
       if (element.cantidad === undefined) {
-        cantidad = 0.0
+        cantidad = 0.0;
       } else {
-        cantidad = element.cantidad
+        cantidad = element.cantidad;
       }
       if (element.codigo === undefined) {
-        codigo = 'ND'
+        codigo = "ND";
       } else {
-        codigo = element.codigo
+        codigo = element.codigo;
       }
       if (element.tipoDte === undefined) {
-        tipoDte = 'ND';
+        tipoDte = "ND";
       } else {
-        tipoDte = element.tipoDte
+        tipoDte = element.tipoDte;
       }
 
       if (element.tipoDoc === undefined) {
-        tipoDoc = 0
+        tipoDoc = 0;
       } else {
-        tipoDoc = element.tipoDoc
+        tipoDoc = element.tipoDoc;
       }
 
       if (element.fechaEmision === undefined) {
-        fechaEmision ='1980-01-01'
+        fechaEmision = "1980-01-01";
       } else {
-        fechaEmision = element.fechaEmision
+        fechaEmision = element.fechaEmision;
       }
       if (element.montoSujetoGrav === undefined) {
-        montoSujetoGrav = 0
+        montoSujetoGrav = 0;
       } else {
-        montoSujetoGrav=element.montoSujetoGrav
+        montoSujetoGrav = element.montoSujetoGrav;
       }
       if (element.codigoRetencionMH === undefined) {
-        codigoRetencionMH = 'ND'
+        codigoRetencionMH = "ND";
       } else {
-        codigoRetencionMH = element.codigoRetencionMH
+        codigoRetencionMH = element.codigoRetencionMH;
       }
       if (element.ivaRetenido === undefined) {
-        ivaRetenido = 0.0
+        ivaRetenido = 0.0;
       } else {
-        ivaRetenido = element.ivaRetenido
+        ivaRetenido = element.ivaRetenido;
       }
-
 
       if (element.psv === undefined) {
         psv = 0.0;
@@ -324,21 +329,19 @@ const guardarcueroDocumento = async (_cuerpoDoc, factura, tipo) => {
       } else {
         tipoItem = element.tipoItem;
       }
-      if (tipo == '07') {
+      if (tipo == "07") {
         if (element.numDocumento === undefined) {
-          numDocumento = 'ND'
+          numDocumento = "ND";
         } else {
-          numeroDocumento = element.numDocumento
+          numeroDocumento = element.numDocumento;
         }
       } else {
         if (element.numeroDocumento === undefined) {
-          numeroDocumento = 'ND';
+          numeroDocumento = "ND";
         } else {
           numeroDocumento = element.numeroDocumento;
         }
       }
-
-
 
       if (element.ventaNoSuj === undefined) {
         ventaNoSuj = 0;
@@ -416,26 +419,26 @@ const guardarResumen = async (_resumen, factura, tipoDoc) => {
       totalIVAretenido,
       totalLetras,
       totalCompra;
-      if (_resumen.totalCompra === undefined) {
-        totalCompra = 0.00
-      } else {
-        totalCompra = _resumen.totalCompra
-      }
+    if (_resumen.totalCompra === undefined) {
+      totalCompra = 0.0;
+    } else {
+      totalCompra = _resumen.totalCompra;
+    }
 
     if (_resumen.totalIVAretenidoLetras == undefined) {
-      totalLetras = _resumen.totalLetras
+      totalLetras = _resumen.totalLetras;
     } else {
-      totalLetras = _resumen.totalIVAretenidoLetras
+      totalLetras = _resumen.totalIVAretenidoLetras;
     }
     if (_resumen.totalIVAretenido === undefined) {
-      totalIVAretenido = 0
+      totalIVAretenido = 0;
     } else {
-      totalIVAretenido = _resumen.totalIVAretenido
+      totalIVAretenido = _resumen.totalIVAretenido;
     }
     if (_resumen.totalSujetoRetencion === undefined) {
-      totalSujetoRetencion = 0
+      totalSujetoRetencion = 0;
     } else {
-      totalSujetoRetencion = _resumen.totalSujetoRetencion
+      totalSujetoRetencion = _resumen.totalSujetoRetencion;
     }
     if (_resumen.ventaGravada === undefined) {
       ventaGravada = 0;
@@ -546,17 +549,17 @@ const guardarResumen = async (_resumen, factura, tipoDoc) => {
       condicionOperacion = _resumen.condicionOperacion;
     }
     if (_resumen.totalDescu === undefined) {
-      totalDescu = 0
+      totalDescu = 0;
     } else {
-      totalDescu = _resumen.totalDescu
+      totalDescu = _resumen.totalDescu;
     }
 
     await sequelize.query(
-      `insert into dte.dbo.resumen(dte_Id,totalNoSuj,totalExenta,totalGravada,subTotalVentas,descuNoSuj,descuExenta,descuGravada,porcentajeDescuento,totalDescu,subTotal,ivaPerci1,ivaRete1,reteRenta,montoTotalOperacion,totalNoGravado,totalPagar,totalLetras,saldoFavor,condicionOperacion,totalSujetoRetencion,totalIVAretenido, totalCompra) values (${id[0].Dte_id
-      },${totalNoSuj},${totalExenta},${totalGravada},${totalNoSuj + totalExenta + totalGravada
-      },${descuNoSuj},${descuExenta},${descuGravada},${porcentajeDescuento},${totalDescu
-      },${subTotal},${ivaPerci1},${ivaRete1},${reteRenta},${montoTotalOperacion},${totalNoGravado},${totalPagar},'${totalLetras
-      }',${saldoFavor},${condicionOperacion},${totalSujetoRetencion},${totalIVAretenido},${totalCompra})`,
+      `insert into dte.dbo.resumen(dte_Id,totalNoSuj,totalExenta,totalGravada,subTotalVentas,descuNoSuj,descuExenta,descuGravada,porcentajeDescuento,totalDescu,subTotal,ivaPerci1,ivaRete1,reteRenta,montoTotalOperacion,totalNoGravado,totalPagar,totalLetras,saldoFavor,condicionOperacion,totalSujetoRetencion,totalIVAretenido, totalCompra) values (${
+        id[0].Dte_id
+      },${totalNoSuj},${totalExenta},${totalGravada},${
+        totalNoSuj + totalExenta + totalGravada
+      },${descuNoSuj},${descuExenta},${descuGravada},${porcentajeDescuento},${totalDescu},${subTotal},${ivaPerci1},${ivaRete1},${reteRenta},${montoTotalOperacion},${totalNoGravado},${totalPagar},'${totalLetras}',${saldoFavor},${condicionOperacion},${totalSujetoRetencion},${totalIVAretenido},${totalCompra})`,
       { type: QueryTypes.SELECT }
     );
   } catch (error) {
@@ -621,13 +624,22 @@ const guardarRespuestaMH = async (_respuestaMH, factura) => {
   }
 };
 
-const guardarApendice = async (factura,tipoSub) => {
+const guardarApendice = async (factura, tipoSub) => {
   //Consultamos datos de la factura como vendedor,obervaciones
 
   try {
-    const id = await dte(factura,);
-    const fact = await SqlFactura(factura)
-    let _vendedor, _nombre, _observaciones, _condiconPago, _descripcion, _cliente1, _pedido, _direccion, _tipo, _tem
+    const id = await dte(factura);
+    const fact = await SqlFactura(factura);
+    let _vendedor,
+      _nombre,
+      _observaciones,
+      _condiconPago,
+      _descripcion,
+      _cliente1,
+      _pedido,
+      _direccion,
+      _tipo,
+      _tem;
     if (fact.length > 0) {
       _vendedor = fact[0].VENDEDOR;
       _nombre = fact[0].NOMBRE;
@@ -636,62 +648,73 @@ const guardarApendice = async (factura,tipoSub) => {
       _descripcion = fact[0].DESCRIPCION;
       _pedido = fact[0].PEDIDO;
       _cliente1 = fact[0].CLIENTE_ORIGEN;
-      const direEmbarque = await SqlDireEmbarque(fact[0].CLIENTE, fact[0].DIREC_EMBARQUE);
-      _direccion = direEmbarque[0].DESCRIPCION.replace('DETALLE:', '');
+      const direEmbarque = await SqlDireEmbarque(
+        fact[0].CLIENTE,
+        fact[0].DIREC_EMBARQUE
+      );
+      _direccion = direEmbarque[0].DESCRIPCION.replace("DETALLE:", "");
       _tipo = fact[0].SUBTIPO_DOC_CXC;
     } else {
       const docCC = await SqlDocumentoCC(factura);
       _vendedor = docCC[0].VENDEDOR;
       _nombre = docCC[0].NOMBREVENDEDOR;
-      _observaciones = 'ND';
-      _condiconPago = 'ND';
-      _descripcion = 'ND';
-      _pedido = 'ND';
+      _observaciones = "ND";
+      _condiconPago = "ND";
+      _descripcion = "ND";
+      _pedido = "ND";
       _cliente1 = docCC[0].CLIENTE;
-      _direccion = 'ND';
+      _direccion = "ND";
       _tipo = 0;
     }
-    const clie = await SqlCliente(_cliente1)
+    const clie = await SqlCliente(_cliente1);
     let _noClie = clie[0].NOMBRE;
-    const _cliente = _cliente1 + '-' + _noClie
-    await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'VENDEDOR','VENDEDOR','${_vendedor}')`,
+    const _cliente = _cliente1 + "-" + _noClie;
+    await sequelize.query(
+      `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'VENDEDOR','VENDEDOR','${_vendedor}')`,
       { type: QueryTypes.SELECT }
     );
-    await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'NOMBRE','NOMBRE','${_nombre}')`,
+    let newNombre = _nombre.replace(/["']/g, "");
+    await sequelize.query(
+      `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'NOMBRE','NOMBRE','${newNombre}')`,
       { type: QueryTypes.SELECT }
     );
     if (tipoSub == 47) {
-      await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'OBSERVACIONES','OBSERVACIONES','ND')`,
+      await sequelize.query(
+        `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'OBSERVACIONES','OBSERVACIONES','ND')`,
         { type: QueryTypes.SELECT }
       );
     } else {
-      await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'OBSERVACIONES','OBSERVACIONES','${_observaciones}')`,
+      await sequelize.query(
+        `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'OBSERVACIONES','OBSERVACIONES','${_observaciones}')`,
         { type: QueryTypes.SELECT }
       );
     }
 
-    await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'PAGO','PAGO','${_condiconPago}')`,
+    await sequelize.query(
+      `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'PAGO','PAGO','${_condiconPago}')`,
       { type: QueryTypes.SELECT }
     );
-    await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'DESCRIPCION','DESCRIPCION','${_descripcion}')`,
+    await sequelize.query(
+      `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'DESCRIPCION','DESCRIPCION','${_descripcion}')`,
       { type: QueryTypes.SELECT }
     );
-    await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'CLIENTE','CLIENTE','${_cliente}')`,
+    await sequelize.query(
+      `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'CLIENTE','CLIENTE','${_cliente}')`,
       { type: QueryTypes.SELECT }
     );
-    await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'PEDIDO','PEDIDO','${_pedido}')`,
+    await sequelize.query(
+      `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'PEDIDO','PEDIDO','${_pedido}')`,
       { type: QueryTypes.SELECT }
     );
 
-
-    await sequelize.query(`insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'DIRECION','DIRECION','${_direccion}')`,
+    await sequelize.query(
+      `insert into dte.dbo.apendice(dte_id,campo,etiqueta,valor) values(${id[0].Dte_id},'DIRECION','DIRECION','${_direccion}')`,
       { type: QueryTypes.SELECT }
     );
   } catch (error) {
     console.log(error);
   }
-
-}
+};
 const updateDte = async (_respuestaMH, factura) => {
   try {
     const id = await dte(factura);
@@ -706,18 +729,17 @@ const updateDte = async (_respuestaMH, factura) => {
 };
 const updateFacturaDte = async (_factura) => {
   try {
-    const _dte = await dte(_factura)
-    await sequelize.query(`EXEC DTE.dbo.dte_updateFactura '${_factura}','${_dte[0].codigoGeneracion}'`,
+    const _dte = await dte(_factura);
+    await sequelize.query(
+      `EXEC DTE.dbo.dte_updateFactura '${_factura}','${_dte[0].codigoGeneracion}'`,
       {
         type: QueryTypes.SELECT,
       }
-
-    )
-
+    );
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-}
+};
 const guardarObservacionesMH = async (datos, factura) => {
   const id = await dte(factura);
   try {
@@ -740,7 +762,7 @@ const guardarObservacionesMH = async (datos, factura) => {
         { type: QueryTypes.SELECT }
       );
     }
-  } catch (error) { }
+  } catch (error) {}
 };
 const dte = async (doc) => {
   return (dte_id = await SqlDte(doc));
@@ -761,5 +783,5 @@ module.exports = {
   updateDte,
   guardarSubjectoExcluido,
   guardarApendice,
-  updateFacturaDte
+  updateFacturaDte,
 };

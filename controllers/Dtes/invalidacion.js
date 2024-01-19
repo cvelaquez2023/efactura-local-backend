@@ -49,10 +49,8 @@ const postInvalidar = async (req, res) => {
   );
   */
 
-  const datosDte = await SqlDteReceptor(datos[0].Dte_id)
+  const datosDte = await SqlDteReceptor(datos[0].Dte_id);
   const _idDte = datosDte[0].dte_Id;
-
-
 
   const uuid = require("uuid");
   const _codigoGeneracion = uuid.v4().toUpperCase();
@@ -73,9 +71,9 @@ const postInvalidar = async (req, res) => {
     nombre: empresa[0].nombre,
     tipoEstablecimiento: empresa[0].tipoestablecimiento,
     nomEstablecimiento: empresa[0].nombreComercial,
-    codEstableMH: 'M001',
+    codEstableMH: "M001",
     codEstable: empresa[0].codestable,
-    codPuntoVentaMH: 'P001',
+    codPuntoVentaMH: "P001",
     codPuntoVenta: empresa[0].codPuntoVenta,
     telefono: empresa[0].telefono,
     correo: empresa[0].correoDte,
@@ -89,13 +87,13 @@ const postInvalidar = async (req, res) => {
     _dui = datosDte[0].nit;
   }
 
-  let iva = 0.00
-  if (datos[0].tipoDte === '01') {
-    iva = 0.00;
+  let iva = 0.0;
+  if (datos[0].tipoDoc === "01") {
+    iva = 0.0;
   } else {
     iva = parseFloat(datos[0].montoTotal);
   }
-
+  
   const _documento = {
     tipoDte: datos[0].tipoDoc,
     codigoGeneracion: datos[0].codigoGeneracion,
@@ -108,7 +106,7 @@ const postInvalidar = async (req, res) => {
     numDocumento: _dui,
     nombre: datosDte[0].nombre,
     telefono: datosDte[0].telefono,
-    correo: datosDte[0].correo
+    correo: datosDte[0].correo,
   };
 
   const _motivo = {
@@ -135,18 +133,16 @@ const postInvalidar = async (req, res) => {
     dteJson: datosJs,
   };
 
-
-
   const _firma = await firmaMH(datafirma);
   const datos3 = {
     json: datosJs,
-    _firma
-  }
+    _firma,
+  };
   //traermos la autorizacion de mh
-/*
-  res.send(datos3)
-  return
-*/
+
+  res.send(datos3);
+  return;
+
   const _auth = await autorizacionMh();
   _token = _auth.token;
 
@@ -161,7 +157,6 @@ const postInvalidar = async (req, res) => {
     version: empresa[0].VersionInva,
     documento: _firma,
   });
-
 
   var requestOptions = {
     method: "POST",
@@ -216,19 +211,14 @@ const postInvalidar = async (req, res) => {
       .tz(_respuestaMH.fhProcesamiento, "America/El_Salvador")
       .format("YYYY-MM-DD HH:mm:ss");
 
-
     await sequelize.query(
       `update dte.dbo.dtes set selloRecibidoInva='${_respuestaMH.selloRecibido}',fechaHoraInva='${fechaHora}',invalidado=1,codigoGeneracionInvalidacion='${_respuestaMH.codigoGeneracion}',estadoIvalidacion='${_respuestaMH.estado}' where Dte_id= ${_idDte}`,
       { type: QueryTypes.SELECT }
     );
     //Consultados correo del cliente
 
-    const doc = documento.replace('-24-', '-')
-    await emailInvalidado(
-      doc,
-      datosDte[0].correo,
-      "dte07"
-    );
+    const doc = documento.replace("-24-", "-");
+    await emailInvalidado(doc, datosDte[0].correo, "dte07");
     res.send({
       errors: ["Procesado en Hacienda Aceptados"],
       result: "Procesado en Hacienda Aceptados",

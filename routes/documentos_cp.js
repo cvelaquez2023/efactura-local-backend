@@ -1,8 +1,12 @@
 const express = require("express");
 
-const { postDocumentoCp } = require("../controllers/documentosCp");
+const {
+  postDocumentoCp,
+  postDocumentoCpSuj,
+} = require("../controllers/documentosCp");
 
 const router = express.Router();
 
 router.post("/", postDocumentoCp);
+router.post("/sujetoExcluido", postDocumentoCpSuj);
 module.exports = router;

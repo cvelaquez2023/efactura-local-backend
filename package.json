@@ -30,6 +30,7 @@
     "multer": "^1.4.5-lts.1",
     "node-windows": "^1.0.0-beta.8",
     "nodemailer": "^6.9.4",
+    "nodemon": "^3.0.2",
     "pdf-creator-node": "^2.3.5",
     "pdfkit": "^0.14.0",
     "pdfkit-construct": "^1.2.3",

@@ -32,7 +32,11 @@ const {
   guardarApendice,
   updateFacturaDte,
 } = require("../../sqltx/Sqlguardar");
-const { emailRechazo, emailEnviado, emailContingencia } = require("../../utils/email");
+const {
+  emailRechazo,
+  emailEnviado,
+  emailContingencia,
+} = require("../../utils/email");
 
 const fs = require("fs");
 const path = require("path");
@@ -79,12 +83,15 @@ const postDte05 = async (req, res) => {
   const _emisor = await emisor(_empresa, "05");
   const _receptor = await receptor(_factura, "05");
   const _cuerpo = await cuerpoDoc(_factura, _docRela[0].numeroDocumento);
-  const _cuerpoLote = await cuerpoDocLote(_factura, _docRela[0].numeroDocumento);
+  const _cuerpoLote = await cuerpoDocLote(
+    _factura,
+    _docRela[0].numeroDocumento
+  );
   const _resumen = await resumen(_factura);
   const _extension = null;
   const _apendice = await apendice(_factura, "05");
   const _fechaFac = await SqlFactura(_factura);
-  let fechaFull = ""
+  let fechaFull = "";
   if (_fechaFac > 0) {
     fechaFull = _fechaFac[0].FECHAFULL;
   } else {
@@ -151,8 +158,6 @@ const postDte05 = async (req, res) => {
   await guardarTributoResumen(_resumen.tributos, _factura);
   await guardarApendice(_factura);
 
-
-
   ///Realizamos firma
   if (!HayContingencia) {
     //Atutenticamos
@@ -210,7 +215,7 @@ const postDte05 = async (req, res) => {
     const _respuestaMH = await postrecepciondte();
     await guardarRespuestaMH(_respuestaMH, _factura);
     await updateDte(_respuestaMH, _factura);
-    await updateFacturaDte(_factura)
+    await updateFacturaDte(_factura);
     await guardarObservacionesMH(_respuestaMH.observaciones, _factura);
     await guardarObservacionesMH([_respuestaMH.descripcionMsg], _factura);
 
@@ -238,7 +243,11 @@ const postDte05 = async (req, res) => {
         const newfile = fileName + `${_identificacion.numeroControl}.json`;
 
         fs.writeFileSync(newfile, JSON.stringify(JsonCliente));
-        await emailRechazo(_identificacion.numeroControl, "rechazosdte@drogueriauniversal.com", "dte05");
+        await emailRechazo(
+          _identificacion.numeroControl,
+          "rechazosdte@drogueriauniversal.com",
+          "dte05"
+        );
         await sequelize.query(
           `EXEC dte.dbo.dte_ActualizarFacturaRico '${_factura}'`,
           {
@@ -344,6 +353,10 @@ const docRelacionados = async (datos) => {
 
     const dataccf = await buscarCCF(docus);
     const datosRelacionados = [];
+    if (dataccf.length === 0) {
+      console.log("error no encuenta documento", docus);
+      return;
+    }
     for (let x = 0; x < dataccf.length; x++) {
       const element = dataccf[x];
 
@@ -351,7 +364,6 @@ const docRelacionados = async (datos) => {
         where: { DOCUMENTO: datos },
         raw: true,
       });
-
 
       if (_documentosCC[0].CARGADO_DE_FACT === "S") {
         const factura = await facturaModel.findAll({
@@ -365,7 +377,7 @@ const docRelacionados = async (datos) => {
 
         if (factura[0].FACTURA.substring(0, 6) === "DTE-03") {
           tipoGen = 2;
-          const _factura00 = factura[0].FACTURA
+          const _factura00 = factura[0].FACTURA;
           const dataFactura = {
             tipoDocumento: "03",
             tipoGeneracion: tipoGen,
@@ -373,10 +385,9 @@ const docRelacionados = async (datos) => {
             fechaEmision: momentDate,
           };
           datosRelacionados.push(dataFactura);
-
         } else {
           tipoGen = 1;
-          const _factura00 = factura[0].FACTURA
+          const _factura00 = factura[0].FACTURA;
           const dataFactura = {
             tipoDocumento: "03",
             tipoGeneracion: tipoGen,
@@ -386,7 +397,6 @@ const docRelacionados = async (datos) => {
           datosRelacionados.push(dataFactura);
         }
       } else {
-
         const documentosCC = await documentoModel.findAll({
           where: { DOCUMENTO: element.DOCUMENTO },
           raw: true,
@@ -412,13 +422,11 @@ const docRelacionados = async (datos) => {
     }
     return datosRelacionados;
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
 };
 
-const cuerpoDoc = async (_factura, _documento,) => {
-
+const cuerpoDoc = async (_factura, _documento) => {
   const _documentosCC = await documentoModel.findAll({
     where: { DOCUMENTO: _factura },
     raw: true,
@@ -430,6 +438,13 @@ const cuerpoDoc = async (_factura, _documento,) => {
     const _doc = await SqlFacturaLinea(_factura);
     for (let x = 0; x < _doc.length; x++) {
       const element = _doc[x];
+      const decLinea = element.DESC_TOT_LINEA;
+      const decVolumen = element.DESCUENTO_VOLUMEN;
+      const totalDesc = decLinea + decVolumen;
+      const precio = element.PRECIO_UNITARIO;
+      const cantidad = element.CANTIDAD;
+      const precioTotal = precio * cantidad;
+      const ventagravada = precioTotal - totalDesc;
       corre = corre + 1;
       const data = {
         numItem: corre,
@@ -441,15 +456,14 @@ const cuerpoDoc = async (_factura, _documento,) => {
         cantidad: element.CANTIDAD,
         uniMedida: 59,
         precioUni: parseFloat(element.PRECIO_UNITARIO.toFixed(4)),
-        montoDescu: 0,
+        montoDescu: totalDesc,
         ventaNoSuj: 0.0,
         ventaExenta: 0.0,
-        ventaGravada: parseFloat(element.PRECIO_TOTAL.toFixed(4)),
+        ventaGravada: parseFloat(ventagravada.toFixed(4)),
         tributos: ["20"],
       };
       _cuerpoDoc.push(data);
     }
-
     return _cuerpoDoc;
   } else {
     const _cuerpoDoc = [];
@@ -483,7 +497,6 @@ const cuerpoDoc = async (_factura, _documento,) => {
 
 const cuerpoDocLote = async (_factura, _documento) => {
   try {
-
     const _documentosCC = await documentoModel.findAll({
       where: { DOCUMENTO: _factura },
       raw: true,
@@ -554,8 +567,8 @@ const cuerpoDocLote = async (_factura, _documento) => {
       }
 
       const _totalPagar = totalLinea - totalDescuento + totalImpuesto1;
-      return _cuerpoDoc;
 
+      return _cuerpoDoc;
     } else {
       const _cuerpoDoc = [];
       let corre = 0;
@@ -568,7 +581,7 @@ const cuerpoDocLote = async (_factura, _documento) => {
           numItem: corre,
           tipoItem: 1,
           numeroDocumento: _documento,
-          codigo: 'ND',
+          codigo: "ND",
           codTributo: null,
           descripcion: element.APLICACION,
           cantidad: 1,
@@ -580,22 +593,18 @@ const cuerpoDocLote = async (_factura, _documento) => {
           ventaGravada: parseFloat(element.SUBTOTAL.toFixed(4)),
           tributos: ["20"],
           noGravado: 0,
-          lote: 'ND',
+          lote: "ND",
         };
         _cuerpoDoc.push(data);
       }
       return _cuerpoDoc;
     }
-
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
-
 };
 
 const resumen = async (_documento) => {
-
   try {
     const _fac = await SqlFactura(_documento);
     if (_fac.length > 0) {
@@ -615,7 +624,7 @@ const resumen = async (_documento) => {
         descuNoSuj: 0.0,
         descuExenta: 0.0,
         descuGravada: 0.0,
-        totalDescu: 0,
+        totalDescu: parseFloat(totalDescuento.toFixed(2)),
         tributos: [
           {
             codigo: "20",
@@ -628,7 +637,8 @@ const resumen = async (_documento) => {
         ivaRete1: 0,
         reteRenta: 0,
         montoTotalOperacion: parseFloat(_fac[0].totalPagar.toFixed(2)),
-        totalLetras: NumeroLetras(parseFloat(_fac[0].totalPagar.toFixed(2))) + " USD",
+        totalLetras:
+          NumeroLetras(parseFloat(_fac[0].totalPagar.toFixed(2))) + " USD",
         condicionOperacion: 1,
       };
       return _resumen;
@@ -671,36 +681,31 @@ const resumen = async (_documento) => {
         condicionOperacion: 1,
       };
       return _resumen;
-
     }
-
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
 };
 const buscarCCF = async (ccf) => {
   try {
     const arr = ccf.split(" ");
     for (let ccf of arr) {
       if (ccf.match("CF")) {
-
         const _factura = await SqlFactura(ccf);
 
         return _factura;
       }
 
       if (ccf.match("DTE-03")) {
-        const parte1 = ccf.substring(0, 15)
-        const parte2 = ccf.substring(16, 31)
-        const partet = parte1 + '-24-' + parte2
+        const parte1 = ccf.substring(0, 15);
+        const parte2 = ccf.substring(16, 31);
+        const partet = parte1 + "-24-" + parte2;
         const _factura = await SqlFactura(partet);
         return _factura;
       }
     }
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-
 };
 module.exports = postDte05;
