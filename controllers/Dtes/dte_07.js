@@ -1,4 +1,4 @@
-//Comporbante de Retencion
+//Comprobante de Retencion
 
 const { QueryTypes } = require("sequelize");
 const moment = require("moment");
@@ -59,7 +59,7 @@ const postDte07 = async (req, res) => {
   const _cuerpo = await cuerpoDoc(_factura);
   const _resumen = await resumen(_factura);
   const _extesnsion = await extension();
-
+  
   const dte = {
     identificacion: _identificacion,
     emisor: _emisor,
@@ -105,7 +105,7 @@ const postDte07 = async (req, res) => {
     montoTotal: _resumen.totalIVAretenido,
     Documento: _receptor.numDocumento,
     Empresa_id: _empresa,
-    firma:_firma
+    firma: _firma,
   };
 
   await guardarDte(dataDte);
@@ -114,10 +114,6 @@ const postDte07 = async (req, res) => {
   await guardarReceptor(_receptor, _factura);
   await guardarcueroDocumento(_cuerpo, _factura, "07");
   await guardarResumen(_resumen, _factura, "07");
-
-
-
-
 
   if (!HayContingencia) {
     const _auth = await autorizacionMh();
@@ -171,7 +167,7 @@ const postDte07 = async (req, res) => {
     const _respuestaMH = await postrecepciondte();
     await guardarRespuestaMH(_respuestaMH, _factura);
     await updateDte(_respuestaMH, _factura);
-    await updateFacturaDte(_factura)
+    await updateFacturaDte(_factura);
     await guardarObservacionesMH(_respuestaMH.observaciones, _factura);
     await guardarObservacionesMH([_respuestaMH.descripcionMsg], _factura);
 
@@ -297,42 +293,68 @@ const cuerpoDoc = async (documento) => {
       type: QueryTypes.SELECT,
     }
   );
-  const docCp = await sequelize.query(
-    `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].CREDITO}'`,
-    {
-      type: QueryTypes.SELECT,
-    }
-  );
-  const notRetencion = await sequelize.query(
-    `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].DEBITO}'`,
-    {
-      type: QueryTypes.SELECT,
-    }
-  );
 
-  
-  const _tipo = notRetencion[0].APLICACION.substring(16, 19);
-  const _documento = datos[0].CREDITO;
-  const _codRetencion = notRetencion[0].APLICACION.substring(10, 13);
-  const _prove = notRetencion[0].PROVEEDOR
+  if (datos[0].ORIGEN === "CP") {
+    const docCp = await sequelize.query(
+      `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].CREDITO}'`,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const notRetencion = await sequelize.query(
+      `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].DEBITO}'`,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
 
-  const retencion = await SqlRetencionCp(_prove, _tipo, _documento, _codRetencion)
-  let cuerpo = [];
-  const data = {
-    numItem: 1,
-    tipoDte: "03",
-    tipoDoc: 1,
-    numDocumento: docCp[0].DOCUMENTO,
-    fechaEmision: moment
-      .tz(docCp[0].FECHA_DOCUMENTO, "America/El_Salvador")
-      .format("YYYY-MM-DD"),
-    montoSujetoGrav: retencion[0].base,
-    codigoRetencionMH: "22",
-    ivaRetenido: retencion[0].monto,
-    descripcion: notRetencion[0].APLICACION,
-  };
-  cuerpo.push(data);
-  return cuerpo;
+    const _tipo = notRetencion[0].APLICACION.substring(16, 19);
+    const _documento = datos[0].CREDITO;
+    const _codRetencion = notRetencion[0].APLICACION.substring(10, 13);
+    const _prove = notRetencion[0].PROVEEDOR;
+
+    const retencion = await SqlRetencionCp(
+      _prove,
+      _tipo,
+      _documento,
+      _codRetencion
+    );
+    let cuerpo = [];
+    const data = {
+      numItem: 1,
+      tipoDte: "03",
+      tipoDoc: 1,
+      numDocumento: docCp[0].DOCUMENTO,
+      fechaEmision: moment
+        .tz(docCp[0].FECHA_DOCUMENTO, "America/El_Salvador")
+        .format("YYYY-MM-DD"),
+      montoSujetoGrav: retencion[0].base,
+      codigoRetencionMH: "22",
+      ivaRetenido: retencion[0].monto,
+      descripcion: notRetencion[0].APLICACION,
+    };
+    cuerpo.push(data);
+    return cuerpo;
+  }
+  if (datos[0].ORIGEN === "CH") {
+   
+    let cuerpo = [];
+    const data = {
+      numItem: 1,
+      tipoDte: "03",
+      tipoDoc: 1,
+      numDocumento: datos[0].DOC_SOPORTE,
+      fechaEmision: moment
+        .tz(datos[0].FECHA_DOCUMENTO, "America/El_Salvador")
+        .format("YYYY-MM-DD"),
+      montoSujetoGrav: datos[0].BASE,
+      codigoRetencionMH: "22",
+      ivaRetenido: datos[0].MONTO,
+      descripcion: datos[0].APLICACION,
+    };
+    cuerpo.push(data);
+    return cuerpo;
+  }
 };
 const resumen = async (documento) => {
   const datos = await sequelize.query(
@@ -341,31 +363,46 @@ const resumen = async (documento) => {
       type: QueryTypes.SELECT,
     }
   );
-  const docCp = await sequelize.query(
-    `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].CREDITO}'`,
-    {
-      type: QueryTypes.SELECT,
-    }
-  );
-  const notRetencion = await sequelize.query(
-    `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].DEBITO}'`,
-    {
-      type: QueryTypes.SELECT,
-    }
-  );
-  const _tipo = notRetencion[0].APLICACION.substring(16, 19);
-  const _documento = datos[0].CREDITO;
-  const _codRetencion = notRetencion[0].APLICACION.substring(10, 13);
-  const _prove = notRetencion[0].PROVEEDOR
-
-  const retencion = await SqlRetencionCp(_prove, _tipo, _documento, _codRetencion)
-
-  const data = {
-    totalSujetoRetencion:retencion[0].base,
-    totalIVAretenido: retencion[0].monto,
-    totalIVAretenidoLetras: NumeroLetras(retencion[0].monto),
-  };
-  return data;
+  if(datos[0].ORIGEN==='CP'){
+    const docCp = await sequelize.query(
+      `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].CREDITO}'`,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const notRetencion = await sequelize.query(
+      `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].DEBITO}'`,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const _tipo = notRetencion[0].APLICACION.substring(16, 19);
+    const _documento = datos[0].CREDITO;
+    const _codRetencion = notRetencion[0].APLICACION.substring(10, 13);
+    const _prove = notRetencion[0].PROVEEDOR;
+  
+    const retencion = await SqlRetencionCp(
+      _prove,
+      _tipo,
+      _documento,
+      _codRetencion
+    );
+  
+    const data = {
+      totalSujetoRetencion: retencion[0].base,
+      totalIVAretenido: retencion[0].monto,
+      totalIVAretenidoLetras: NumeroLetras(retencion[0].monto),
+    };
+    return data;
+  }
+  if(datos[0].ORIGEN=='CH'){
+    const data = {
+      totalSujetoRetencion: datos[0].BASE,
+      totalIVAretenido: datos[0].MONTO,
+      totalIVAretenidoLetras: NumeroLetras(datos[0].MONTO),
+    };
+    return data;
+  }
 };
 const extension = async () => {
   const data = {

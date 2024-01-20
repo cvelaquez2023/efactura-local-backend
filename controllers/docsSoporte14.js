@@ -5,7 +5,7 @@ const { docSoporteModel, valeModel } = require("../models");
 const { parse } = require("dotenv");
 const { SqlDte } = require("../sqltx/sql");
 
-const postdocsSoporte = async (req, res) => {
+const postdocsSoporte14 = async (req, res) => {
   const {
     _vale,
     _linea,
@@ -33,8 +33,10 @@ const postdocsSoporte = async (req, res) => {
     _id,
     _montoProvisional,
     _montoDefinitivo,
+    _procesaMH,
   } = req.body;
 
+  
   try {
     //consultamos si hay registris en el vale para ver la liena
     let nuevaLiena = 0;
@@ -52,8 +54,7 @@ const postdocsSoporte = async (req, res) => {
       nuevaLiena = 0;
     }
     const doc = _doc_soporte.substr(0, 34);
-    
-    
+
     const dte = await SqlDte(doc);
     const codgen = dte[0].codigoGeneracion;
     const dato = {
@@ -113,4 +114,4 @@ const postdocsSoporte = async (req, res) => {
   }
 };
 
-module.exports = { postdocsSoporte };
+module.exports = { postdocsSoporte14 };

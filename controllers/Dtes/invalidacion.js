@@ -93,7 +93,7 @@ const postInvalidar = async (req, res) => {
   } else {
     iva = parseFloat(datos[0].montoTotal);
   }
-  
+
   const _documento = {
     tipoDte: datos[0].tipoDoc,
     codigoGeneracion: datos[0].codigoGeneracion,
@@ -139,9 +139,6 @@ const postInvalidar = async (req, res) => {
     _firma,
   };
   //traermos la autorizacion de mh
-
-  res.send(datos3);
-  return;
 
   const _auth = await autorizacionMh();
   _token = _auth.token;
@@ -218,7 +215,9 @@ const postInvalidar = async (req, res) => {
     //Consultados correo del cliente
 
     const doc = documento.replace("-24-", "-");
-    await emailInvalidado(doc, datosDte[0].correo, "dte07");
+    const tipo =doc.substring(4, 6);
+    const tipoDoc = "dte" + tipo;
+    await emailInvalidado(doc, datosDte[0].correo, tipoDoc);
     res.send({
       errors: ["Procesado en Hacienda Aceptados"],
       result: "Procesado en Hacienda Aceptados",

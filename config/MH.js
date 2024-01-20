@@ -260,7 +260,7 @@ const emisor = async (_empresa, tipoDte) => {
         complemento: empresa[0].complementoDir,
       },
       telefono: empresa[0].telefono,
-      correo: empresa[0].correoDte,
+      correo: empresa[0].correoDte.toLowerCase(),
       codEstable: empresa[0].codestable,
       codPuntoVenta: empresa[0].codPuntoVenta,
       codEstableMH: empresa[0].codestableceMh,
@@ -283,7 +283,7 @@ const emisor = async (_empresa, tipoDte) => {
         complemento: empresa[0].complementoDir,
       },
       telefono: empresa[0].telefono,
-      correo: empresa[0].correoDte,
+      correo: empresa[0].correoDte.toLowerCase(),
       codigo: empresa[0].codestable,
       puntoVenta: empresa[0].codPuntoVenta,
       codigoMH: empresa[0].codestableceMh,
@@ -308,7 +308,7 @@ const emisor = async (_empresa, tipoDte) => {
       codEstable: empresa[0].codestable,
       codPuntoVenta: empresa[0].codPuntoVenta,
       codPuntoVentaMH: empresa[0].codPuntoVentaMh,
-      correo: empresa[0].correoDte,
+      correo: empresa[0].correoDte.toLowerCase(),
     };
     return emisor;
   }
@@ -327,7 +327,7 @@ const emisor = async (_empresa, tipoDte) => {
         complemento: empresa[0].complementoDir,
       },
       telefono: empresa[0].telefono,
-      correo: empresa[0].correoDte,
+      correo: empresa[0].correoDte.toLowerCase(),
       codEstable: empresa[0].codestable,
       codPuntoVenta: empresa[0].codPuntoVenta,
       codEstableMH: empresa[0].codestableceMh,
@@ -353,7 +353,7 @@ const emisor = async (_empresa, tipoDte) => {
         complemento: empresa[0].complementoDir,
       },
       telefono: empresa[0].telefono,
-      correo: empresa[0].correoDte,
+      correo: empresa[0].correoDte.toLowerCase(),
     };
     return emisor;
   }
@@ -609,7 +609,7 @@ const receptor07 = async (_factura) => {
       complemento: dataCliente[0].DIRECCION.replace("DETALLE:", ""),
     },
     telefono: dataCliente[0].TELEFONO1.replace("-", ""),
-    correo: dataCliente[0].E_MAIL,
+    correo: dataCliente[0].E_MAIL.toLowerCase(),
   };
   return receptor;
 };

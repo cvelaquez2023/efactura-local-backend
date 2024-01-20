@@ -58,6 +58,7 @@ const postDte01 = async (req, res) => {
       result: false,
     });
   }
+  
   const _identificacion = await identificacion("01", _empresa, _factura);
   const _documentoRelacionado = null;
   const _emisor = await emisor(_empresa, "01");
@@ -65,18 +66,22 @@ const postDte01 = async (req, res) => {
   const _otrosDocumentos = null;
   const _ventaTercero = null;
 
-
   //const _cuerpo = await cuerpoDocLic(_factura,_docExit[0].observaciones, _docExit[0].SUBTIPO_DOC_CXC);
 
-  const _cuerpo = await cuerpoDoc(_factura, _docExit[0].observaciones, _docExit[0].SUBTIPO_DOC_CXC);
-  const _cuerpoLote = await cuerpoDoclote(_factura, _docExit[0].observaciones, _docExit[0].SUBTIPO_DOC_CXC);
-
-
+  const _cuerpo = await cuerpoDoc(
+    _factura,
+    _docExit[0].observaciones,
+    _docExit[0].SUBTIPO_DOC_CXC
+  );
+  const _cuerpoLote = await cuerpoDoclote(
+    _factura,
+    _docExit[0].observaciones,
+    _docExit[0].SUBTIPO_DOC_CXC
+  );
 
   const _resumen = await resumen(_factura);
   const _extension = null;
-  const _apendice = await apendice(_factura, _docExit[0].SUBTIPO_DOC_CXC, '01');
-
+  const _apendice = await apendice(_factura, _docExit[0].SUBTIPO_DOC_CXC, "01");
 
   const _fechaFac = await Sql.SqlFactura(_factura);
 
@@ -92,12 +97,10 @@ const postDte01 = async (req, res) => {
     extension: _extension,
     apendice: _apendice,
   };
-
-
-
-
+ 
   //procedemos a recibir la firma del documento
   //convertimos descodificamos firma
+
 
   const datafirma = {
     nit: process.env.DTE_NIT,
@@ -145,7 +148,7 @@ const postDte01 = async (req, res) => {
   await guardarResumen(_resumen, _factura);
   await guardarTributoResumen(_resumen.tributos, _factura);
   await guardarPagoResumen(_resumen.pagos, _factura);
-  await guardarApendice(_factura,_docExit[0].SUBTIPO_DOC_CXC, '01');
+  await guardarApendice(_factura, _docExit[0].SUBTIPO_DOC_CXC, "01");
 
   /*
   await generaPdf.generaPdf(_factura)
@@ -275,17 +278,13 @@ const postDte01 = async (req, res) => {
       const newfile = fileName + `${_identificacion.numeroControl}.json`;
 
       fs.writeFileSync(newfile, JSON.stringify(JsonCliente));
-      let _correo = ""
+      let _correo = "";
       if (_receptor.correo == undefined || _receptor.correo == null) {
-        _correo = "rechazodte@drogueriauniversal.com"
+        _correo = "rechazodte@drogueriauniversal.com";
       } else {
-        _correo = _receptor.correo
+        _correo = _receptor.correo;
       }
-      await emailEnviado(
-        _identificacion.numeroControl,
-        _correo,
-        "dte01"
-      );
+      await emailEnviado(_identificacion.numeroControl, _correo, "dte01");
       await sequelize.query(
         `EXEC dte.dbo.dte_ActualizarFacturaRico '${_factura}'`,
         {
@@ -351,7 +350,8 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
     for (let index = 0; index < dataFacLinea.length; index++) {
       const element = dataFacLinea[index];
       const precio =
-        (dataFacLinea[0].PRECIO_TOTAL + dataFacLinea[0].TOTAL_IMPUESTO1) / dataFacLinea[0].CANTIDAD;
+        (dataFacLinea[0].PRECIO_TOTAL + dataFacLinea[0].TOTAL_IMPUESTO1) /
+        dataFacLinea[0].CANTIDAD;
       const decLinea =
         element.DESC_TOT_LINEA * parseFloat(process.env.DTE_IMPUESTO);
       const decVolumen =
@@ -368,9 +368,7 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
         numeroDocumento: null,
         codigo: element.ARTICULO,
         codTributo: null,
-        descripcion:
-          element.DESCRIPCION +
-          obser,
+        descripcion: element.DESCRIPCION + obser,
         cantidad: element.CANTIDAD,
         uniMedida: 59,
         precioUni: parseFloat(precio.toFixed(4)),
@@ -397,9 +395,8 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
 
     const _totalPagar = totalLinea - totalDescuento;
     return _cuerpoDoc;
-
   }
-  if(tipo===51){
+  if (tipo === 51) {
     const dataFacLinea = await sequelize.query(
       `EXEC dte.dbo.dte_FacturaLinea51 '${_factura}'`,
       { type: QueryTypes.SELECT }
@@ -430,8 +427,7 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
         numeroDocumento: null,
         codigo: element.ARTICULO,
         codTributo: null,
-        descripcion:
-          element.DESCRIPCION,
+        descripcion: element.DESCRIPCION,
         cantidad: element.CANTIDAD,
         uniMedida: 59,
         precioUni: parseFloat(precio.toFixed(4)),
@@ -443,7 +439,6 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
         psv: 0.0,
         noGravado: 0,
         ivaItem: parseFloat(element.TOTAL_IMPUESTO1.toFixed(4)),
-        lote: 'ND',
       };
       const _totalLinea = precioTotal;
       const _totalDescuento = totalDesc;
@@ -459,8 +454,7 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
 
     const _totalPagar = totalLinea - totalDescuento;
     return _cuerpoDoc;
-  }
-  else {
+  } else {
     const dataFacLinea = await sequelize.query(
       `EXEC dte.dbo.dte_FacturaLinea '${_factura}'`,
       { type: QueryTypes.SELECT }
@@ -523,7 +517,6 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
 
     const _totalPagar = totalLinea - totalDescuento;
     return _cuerpoDoc;
-
   }
 };
 
@@ -543,7 +536,8 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
     for (let index = 0; index < dataFacLinea.length; index++) {
       const element = dataFacLinea[index];
       const precio =
-        (dataFacLinea[0].PRECIO_TOTAL + dataFacLinea[0].TOTAL_IMPUESTO1) / dataFacLinea[0].CANTIDAD;
+        (dataFacLinea[0].PRECIO_TOTAL + dataFacLinea[0].TOTAL_IMPUESTO1) /
+        dataFacLinea[0].CANTIDAD;
       const decLinea =
         element.DESC_TOT_LINEA * parseFloat(process.env.DTE_IMPUESTO);
       const decVolumen =
@@ -560,9 +554,7 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
         numeroDocumento: null,
         codigo: element.ARTICULO,
         codTributo: null,
-        descripcion:
-          element.DESCRIPCION +
-          obser,
+        descripcion: element.DESCRIPCION + obser,
         cantidad: element.CANTIDAD,
         uniMedida: 59,
         precioUni: parseFloat(precio.toFixed(4)),
@@ -574,7 +566,7 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
         psv: 0.0,
         noGravado: 0,
         ivaItem: parseFloat(element.TOTAL_IMPUESTO1.toFixed(4)),
-        lote: 'ND',
+        lote: "ND",
       };
       const _totalLinea = precioTotal;
       const _totalDescuento = totalDesc;
@@ -590,9 +582,8 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
 
     const _totalPagar = totalLinea - totalDescuento;
     return _cuerpoDoc;
-
   }
-  if(tipo===51){
+  if (tipo === 51) {
     const dataFacLinea = await sequelize.query(
       `EXEC dte.dbo.dte_FacturaLinea51 '${_factura}'`,
       { type: QueryTypes.SELECT }
@@ -623,8 +614,7 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
         numeroDocumento: null,
         codigo: element.ARTICULO,
         codTributo: null,
-        descripcion:
-          element.DESCRIPCION,
+        descripcion: element.DESCRIPCION,
         cantidad: element.CANTIDAD,
         uniMedida: 59,
         precioUni: parseFloat(precio.toFixed(4)),
@@ -636,7 +626,7 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
         psv: 0.0,
         noGravado: 0,
         ivaItem: parseFloat(element.TOTAL_IMPUESTO1.toFixed(4)),
-        lote: 'ND',
+        lote: "ND",
       };
       const _totalLinea = precioTotal;
       const _totalDescuento = totalDesc;
@@ -652,8 +642,7 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
 
     const _totalPagar = totalLinea - totalDescuento;
     return _cuerpoDoc;
-  }
-  else {
+  } else {
     const dataFacLinea = await sequelize.query(
       `EXEC dte.dbo.dte_FacturaLinea '${_factura}'`,
       { type: QueryTypes.SELECT }
@@ -718,18 +707,16 @@ const cuerpoDoclote = async (_factura, obser, tipo) => {
     const _totalPagar = totalLinea - totalDescuento;
     return _cuerpoDoc;
   }
-
-
 };
 const resumen = async (_documento) => {
   const _fac = await Sql.SqlFactura(_documento);
   const _facL = await Sql.SqlFacturaLinea(_documento);
-  const _ret = await Sql.SqlFacturaRet(_documento)
-  let ret = 0
+  const _ret = await Sql.SqlFacturaRet(_documento);
+  let ret = 0;
   if (_ret.length > 0) {
     ret = parseFloat(_ret[0].MONTO.toFixed(2));
   } else {
-    ret = 0.00;
+    ret = 0.0;
   }
 
   let totalDescuento = 0;
@@ -761,7 +748,7 @@ const resumen = async (_documento) => {
     //ivaPerci1: 0,
     ivaRete1: ret,
     reteRenta: 0,
-    montoTotalOperacion: parseFloat((_fac[0].montoTotalOperacion).toFixed(2)),
+    montoTotalOperacion: parseFloat(_fac[0].montoTotalOperacion.toFixed(2)),
     totalNoGravado: 0,
     totalPagar: parseFloat((_fac[0].totalPagar - ret).toFixed(2)),
     totalLetras:
@@ -772,9 +759,7 @@ const resumen = async (_documento) => {
     pagos: [
       {
         codigo: "01",
-        montoPago: parseFloat(
-          (_fac[0].totalPagar - ret).toFixed(2)
-        ),
+        montoPago: parseFloat((_fac[0].totalPagar - ret).toFixed(2)),
         plazo: null,
         referencia: null,
         periodo: null,

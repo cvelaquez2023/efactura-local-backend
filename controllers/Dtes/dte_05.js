@@ -353,19 +353,15 @@ const docRelacionados = async (datos) => {
 
     const dataccf = await buscarCCF(docus);
     const datosRelacionados = [];
-    if (dataccf.length === 0) {
-      console.log("error no encuenta documento", docus);
-      return;
-    }
     for (let x = 0; x < dataccf.length; x++) {
       const element = dataccf[x];
 
-      const _documentosCC = await documentoModel.findAll({
-        where: { DOCUMENTO: datos },
+      const _docu = await documentoModel.findAll({
+        where: { DOCUMENTO: element.DOCUMENTO },
         raw: true,
       });
 
-      if (_documentosCC[0].CARGADO_DE_FACT === "S") {
+      if (_docu[0].CARGADO_DE_FACT === "S") {
         const factura = await facturaModel.findAll({
           where: { FACTURA: element.DOCUMENTO },
           raw: true,
