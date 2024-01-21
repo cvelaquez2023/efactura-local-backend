@@ -88,22 +88,7 @@ const loginCtrl = async (req, res) => {
       }
     );
 
-    /*
-    const cliente = await usuarioModel.findAll({
-      attributes: [
-        "usuario_id",
-        "email",
-        "nombres",
-        "activo",
-        "confirm",
-        "rol",
-        "password",
-      ],
-      where: {
-        email: _email,
-      },
-    });
-    */
+ 
 
     if (datausuario.length == 0) {
       return res.send({

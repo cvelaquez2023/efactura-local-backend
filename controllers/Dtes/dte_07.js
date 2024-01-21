@@ -53,6 +53,14 @@ const postDte07 = async (req, res) => {
     });
   }
 
+  const datos = await sequelize.query(
+    `EXEC dte.dbo.dte_AuxiliarCPdebito '${documento}','RET'`,
+    {
+      type: QueryTypes.SELECT,
+    }
+  );
+
+  
   const _identificacion = await identificacion("07", _empresa, _factura);
   const _emisor = await emisor(_empresa, "07");
   const _receptor = await receptor07(_factura);
@@ -96,7 +104,7 @@ const postDte07 = async (req, res) => {
     origen: "PROVEEDOR",
     nombre: _receptor.nombre,
     procesado: 0,
-    mudulo: "CP",
+    modulo: datos[0].ORIGEN,
     tipoDoc: "07",
     selloRecibido: "ND",
     codigoGeneracion: _identificacion.codigoGeneracion,

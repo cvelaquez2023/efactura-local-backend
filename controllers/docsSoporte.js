@@ -52,8 +52,7 @@ const postdocsSoporte = async (req, res) => {
       nuevaLiena = 0;
     }
     const doc = _doc_soporte.substr(0, 34);
-    
-    
+
     const dte = await SqlDte(doc);
     const codgen = dte[0].codigoGeneracion;
     const dato = {
@@ -91,10 +90,9 @@ const postdocsSoporte = async (req, res) => {
     const guardar = await docSoporteModel.create(dato);
     //actualizamos el saldo de vale
 
-    const saldoCaja =
-      parseFloat(_montoDefinitivo).toFixed(2) + parseFloat(_monto).toFixed(2);
+    const saldoCaja = parseFloat(_montoDefinitivo) + parseFloat(_monto);
     const actt = await valeModel.update(
-      { MONTO_VALE: saldoCaja },
+      { MONTO_VALE: saldoCaja.toFixed(2) },
       { where: { CONSECUTIVO: _vale } }
     );
 

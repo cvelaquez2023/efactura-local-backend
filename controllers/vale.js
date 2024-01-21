@@ -1,6 +1,7 @@
 const { QueryTypes } = require("sequelize");
 const { sequelize } = require("../config/mssql");
 const { cajaChicaModel, valeModel } = require("../models");
+const { parse } = require("dotenv");
 
 const postVale = async (req, res) => {
   const {
@@ -79,7 +80,7 @@ const postVale = async (req, res) => {
     const CreateVale = await valeModel.create(datos);
 
     const _cajaChica = CAJA_CHICA;
-    const _saldoCaja = SALDO_CAJA - MONTO_VALE;
+    const _saldoCaja = parseFloat(SALDO_CAJA) - parseFloat(MONTO_VALE);
 
     const isExito = CreateVale._options.isNewRecord;
     if (isExito) {
@@ -111,7 +112,6 @@ const postVale = async (req, res) => {
 const getVale = async (req, res) => {
   try {
     const _cajaChica = req.params.cajachica;
-    console.log(_cajaChica);
     const vales = await valeModel.findAll({
       where: { CAJA_CHICA: _cajaChica, ESTADO: "P" },
     });

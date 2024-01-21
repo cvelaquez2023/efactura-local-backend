@@ -89,7 +89,7 @@ const postDte14 = async (req, res) => {
         origen: "PROVEEDOR",
         nombre: _subjectoExcluido.nombre,
         procesado: 0,
-        modulo: "CP",
+        modulo: _form.origen,
         tipoDoc: "14",
         selloRecibido: "ND",
         codigoGeneracion: _identificacion.codigoGeneracion,
@@ -100,6 +100,7 @@ const postDte14 = async (req, res) => {
         Empresa_id: _empresa,
         firma: _firma,
       };
+
       await guardarDte(dataDte);
       await guardarIdentificacion(_identificacion, _form.aplicacion.dte);
       await guardarEmision(_emisior, _form.aplicacion.dte);
@@ -309,13 +310,14 @@ const postDte14 = async (req, res) => {
       fs.writeFileSync(newfile, JSON.stringify(JsonCliente));
       await emailEnviado(_ide.numeroControl, _subj.correo, "dte14");
       //guardamos en CP
-
-      const _documetoCp = await sequelize.query(
-        `EXEC dte.dbo.dte_DocumentosCPSujetoExcludio ${dte[0].Dte_id},'FAC','${_ide.fecEmi}','${_ide.fecEmi}','${_cuer.descripcion}','01',12,'${_ide.fecEmi}','EXCL','${dte[0].selloRecibido}' `,
-        {
-          type: sequelize.QueryTypes.SELECT,
-        }
-      );
+      if (_form.origen === "CP") {
+        const _documetoCp = await sequelize.query(
+          `EXEC dte.dbo.dte_DocumentosCPSujetoExcludio ${dte[0].Dte_id},'FAC','${_ide.fecEmi}','${_ide.fecEmi}','${_cuer.descripcion}','01',12,'${_ide.fecEmi}','EXCL','${dte[0].selloRecibido}' `,
+          {
+            type: sequelize.QueryTypes.SELECT,
+          }
+        );
+      }
 
       res.send({
         messaje: "Procesado en Hacienda Aceptados",
