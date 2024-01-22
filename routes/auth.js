@@ -19,9 +19,12 @@ const {
   editarCliente,
   dirClienteNew,
   dirClienteUpdate,
+  listarUser,
 } = require("../controllers/auth");
 const authMiddleware = require("../middleware/session");
 const checkRol = require("../middleware/rol");
+//Listar User
+router.get("/listarUsuario", authMiddleware, checkRol(["Admin"]), listarUser);
 //Crear Clientes
 router.post("/register", registerCtrl);
 //Activar Cuentas
@@ -31,7 +34,7 @@ router.post("/codigo", generarCodigo);
 //Validar Code
 router.post("/validarCode", validarCode);
 //Login contraseña
-router.post("/login",  loginCtrl);
+router.post("/login", loginCtrl);
 //Login Codigo
 router.post("/loginCodigo", validatorLoginCodigo, loginCtrl);
 

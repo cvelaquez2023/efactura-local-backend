@@ -26,8 +26,8 @@ const registerCtrl = async (req, res) => {
   try {
     const _email = req.body.email;
     const _nombres = req.body.nombres;
-    const _PASSWORD = await encrypt(req.body.Password);
-    const _rol = "Admin";
+    const _PASSWORD = await encrypt(req.body.password);
+    const _rol = req.body.rol;
     var today = new Date();
     const Usuario = {
       email: _email,
@@ -44,10 +44,8 @@ const registerCtrl = async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
-    console.log(existEmail)
 
-
-    if (existEmail.length == 0) {
+    if (existEmail.length === 0) {
       const crearUser = await sequelize.query(
         `insert into dte.dbo.usuario(email,nombres,activo,rol,password,confirm) values('${_email}','${_nombres}',1,'${_rol}','${_PASSWORD}',1) `,
 
@@ -56,14 +54,17 @@ const registerCtrl = async (req, res) => {
         }
       );
 
-
       res.send({
-        results: { message: "Revise su Correo para Activar su Cuenta" },
-        result: true,
+        results: { message: "El Correo se Registro con Existo" },
+        success: true,
         error: "",
       });
     } else {
-      handleHttpError(res, "ERROR CORREO YA EXISTE");
+      res.send({
+        results: { message: "Ya existe" },
+        success: false,
+        errors: ["El Correo Ya Fue registrado"],
+      });
     }
   } catch (error) {
     console.log(error);
@@ -87,8 +88,6 @@ const loginCtrl = async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
-
- 
 
     if (datausuario.length == 0) {
       return res.send({
@@ -118,7 +117,6 @@ const loginCtrl = async (req, res) => {
           errors: ["PASSWORD INVALIDO"],
         });
       }
-
 
       // datausuario[0].set("password", undefined, { strict: false });
       nuevo = JSON.stringify(datausuario[0]);
@@ -616,8 +614,22 @@ const editarCliente = async (req, res) => {
     });
   }
 };
-const dirClienteNew = async (req, res) => { };
-const dirClienteUpdate = async (req, res) => { };
+const dirClienteNew = async (req, res) => {};
+const dirClienteUpdate = async (req, res) => {};
+const listarUser = async (req, res) => {
+  try {
+    const listUser = await sequelize.query(`select * from dte.dbo.usuario `, {
+      type: QueryTypes.SELECT,
+    });
+    res.send({
+      result: listUser,
+      success: true,
+      error: "",
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 module.exports = {
   registerCtrl,
   loginCtrl,
@@ -631,4 +643,5 @@ module.exports = {
   editarCliente,
   dirClienteNew,
   dirClienteUpdate,
+  listarUser,
 };
