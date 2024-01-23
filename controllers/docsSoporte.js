@@ -33,6 +33,7 @@ const postdocsSoporte = async (req, res) => {
     _id,
     _montoProvisional,
     _montoDefinitivo,
+    _origen,
   } = req.body;
 
   try {
@@ -51,9 +52,16 @@ const postdocsSoporte = async (req, res) => {
     } else {
       nuevaLiena = 0;
     }
-    const doc = _doc_soporte.substr(0, 34);
+    let doc;
+    if (_origen == "JSON") {
+      doc = _doc_soporte.substr(0, 31);
+    }
+    if (_origen == undefined) {
+      doc = _doc_soporte.substr(0, 34);
+    }
 
     const dte = await SqlDte(doc);
+
     const codgen = dte[0].codigoGeneracion;
     const dato = {
       VALE: _vale,

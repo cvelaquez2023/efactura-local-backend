@@ -36,6 +36,7 @@ const generaPdf = require("../../utils/generaPdf");
 const { resolveObjectURL } = require("buffer");
 const postDte07 = async (req, res) => {
   const _factura = req.params.factura;
+
   const _empresa = req.params.id;
   let estado = "";
   if (!_factura) {
@@ -54,20 +55,19 @@ const postDte07 = async (req, res) => {
   }
 
   const datos = await sequelize.query(
-    `EXEC dte.dbo.dte_AuxiliarCPdebito '${documento}','RET'`,
+    `EXEC dte.dbo.dte_AuxiliarCPdebito '${_factura}','RET'`,
     {
       type: QueryTypes.SELECT,
     }
   );
 
-  
   const _identificacion = await identificacion("07", _empresa, _factura);
   const _emisor = await emisor(_empresa, "07");
   const _receptor = await receptor07(_factura);
   const _cuerpo = await cuerpoDoc(_factura);
   const _resumen = await resumen(_factura);
   const _extesnsion = await extension();
-  
+
   const dte = {
     identificacion: _identificacion,
     emisor: _emisor,
@@ -77,6 +77,7 @@ const postDte07 = async (req, res) => {
     extension: _extesnsion,
     apendice: null,
   };
+
 
   const datafirma = {
     nit: process.env.DTE_NIT,
@@ -345,7 +346,6 @@ const cuerpoDoc = async (documento) => {
     return cuerpo;
   }
   if (datos[0].ORIGEN === "CH") {
-   
     let cuerpo = [];
     const data = {
       numItem: 1,
@@ -371,7 +371,7 @@ const resumen = async (documento) => {
       type: QueryTypes.SELECT,
     }
   );
-  if(datos[0].ORIGEN==='CP'){
+  if (datos[0].ORIGEN === "CP") {
     const docCp = await sequelize.query(
       `EXEC dte.dbo.dte_documentoCP '${datos[0].PROVEEDOR}','${datos[0].CREDITO}'`,
       {
@@ -388,14 +388,14 @@ const resumen = async (documento) => {
     const _documento = datos[0].CREDITO;
     const _codRetencion = notRetencion[0].APLICACION.substring(10, 13);
     const _prove = notRetencion[0].PROVEEDOR;
-  
+
     const retencion = await SqlRetencionCp(
       _prove,
       _tipo,
       _documento,
       _codRetencion
     );
-  
+
     const data = {
       totalSujetoRetencion: retencion[0].base,
       totalIVAretenido: retencion[0].monto,
@@ -403,7 +403,7 @@ const resumen = async (documento) => {
     };
     return data;
   }
-  if(datos[0].ORIGEN=='CH'){
+  if (datos[0].ORIGEN == "CH") {
     const data = {
       totalSujetoRetencion: datos[0].BASE,
       totalIVAretenido: datos[0].MONTO,

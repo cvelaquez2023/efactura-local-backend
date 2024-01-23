@@ -135,7 +135,7 @@ const postDte14 = async (req, res) => {
     //consultamos dteID
     const dte = await SqlDte(_form.aplicacion.dte);
     //consultamos _identficiacion
-    const _identificacion = await SqlDteIdentificacion(dte[0].Dte_id);
+    const _ident = await SqlDteIdentificacion(dte[0].Dte_id);
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     myHeaders.append("Authorization", _token);
@@ -143,10 +143,10 @@ const postDte14 = async (req, res) => {
     var raw = JSON.stringify({
       ambiente: process.env.DTE_AMBIENTE,
       idEnvio: 1,
-      version: _identificacion[0].version,
-      tipoDte: _identificacion[0].tipoDte,
+      version: _ident[0].version,
+      tipoDte: _ident[0].tipoDte,
       documento: dte[0].firma,
-      codigoGeneracion: _identificacion[0].codigoGeneracion,
+      codigoGeneracion: _ident[0].codigoGeneracion,
     });
 
     var requestOptions = {
@@ -175,6 +175,7 @@ const postDte14 = async (req, res) => {
       _respuestaMH.observaciones,
       _form.aplicacion.dte
     );
+    const _identificacion = await SqlDteIdentificacion(dte[0].Dte_id);
     const _ide = {
       version: _identificacion[0].version,
       ambiente: _identificacion[0].ambiente,
@@ -312,7 +313,7 @@ const postDte14 = async (req, res) => {
       //guardamos en CP
       if (_form.origen === "CP") {
         const _documetoCp = await sequelize.query(
-          `EXEC dte.dbo.dte_DocumentosCPSujetoExcludio ${dte[0].Dte_id},'FAC','${_ide.fecEmi}','${_ide.fecEmi}','${_cuer.descripcion}','01',12,'${_ide.fecEmi}','EXCL','${dte[0].selloRecibido}' `,
+          `EXEC dte.dbo.dte_DocumentosCPSujetoExcludio ${dte[0].Dte_id},'FAC','${_ide.fecEmi}','${_ide.fecEmi}','${_cuer.descripcion}','01',12,'${_ide.fecEmi}','EXCL','${_respuestaMH.selloRecibido}' `,
           {
             type: sequelize.QueryTypes.SELECT,
           }
@@ -321,7 +322,7 @@ const postDte14 = async (req, res) => {
 
       res.send({
         messaje: "Procesado en Hacienda Aceptados",
-        result: "Proceso se realizo con existo",
+        result: { JsonCliente },
         success: true,
         hacienda: true,
       });

@@ -609,7 +609,7 @@ const receptor07 = async (_factura) => {
       complemento: dataCliente[0].DIRECCION.replace("DETALLE:", ""),
     },
     telefono: dataCliente[0].TELEFONO1.replace("-", ""),
-    correo: dataCliente[0].E_MAIL.toLowerCase(),
+    correo: dataCliente[0].E_MAIL,
   };
   return receptor;
 };
