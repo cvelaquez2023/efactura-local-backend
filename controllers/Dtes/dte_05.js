@@ -48,7 +48,7 @@ const {
   SqlFactura,
 } = require("../../sqltx/sql");
 const { generaPdf05 } = require("../../utils/generaPdf");
-const { Console } = require("console");
+
 //Nota Credito
 const postDte05 = async (req, res) => {
   const _factura = req.params.factura;
@@ -80,9 +80,11 @@ const postDte05 = async (req, res) => {
 
   const _identificacion = await identificacion("05", _empresa, _factura);
   const _docRela = await docRelacionados(_factura);
+
   const _emisor = await emisor(_empresa, "05");
   const _receptor = await receptor(_factura, "05");
   const _cuerpo = await cuerpoDoc(_factura, _docRela[0].numeroDocumento);
+
   const _cuerpoLote = await cuerpoDocLote(
     _factura,
     _docRela[0].numeroDocumento
@@ -355,7 +357,6 @@ const docRelacionados = async (datos) => {
     const datosRelacionados = [];
     for (let x = 0; x < dataccf.length; x++) {
       const element = dataccf[x];
-
       const _docu = await documentoModel.findAll({
         where: { DOCUMENTO: element.DOCUMENTO },
         raw: true,
@@ -644,15 +645,16 @@ const resumen = async (_documento) => {
         raw: true,
       });
 
+      const totalOperac = parseFloat(
+        _documentosCC[0].BASE_IMPUESTO1 +
+          _documentosCC[0].IMPUESTO1 +
+          _documentosCC[0].IMPUESTO2
+      );
       const _resumen = {
         totalNoSuj: 0.0,
         totalExenta: 0.0,
-        totalGravada: parseFloat(
-          (_documentosCC[0].MONTO - _documentosCC[0].IMPUESTO1).toFixed(2)
-        ),
-        subTotalVentas: parseFloat(
-          (_documentosCC[0].MONTO - _documentosCC[0].IMPUESTO1).toFixed(2)
-        ),
+        totalGravada: parseFloat(_documentosCC[0].BASE_IMPUESTO1.toFixed(2)),
+        subTotalVentas: parseFloat(_documentosCC[0].BASE_IMPUESTO1.toFixed(2)),
         descuNoSuj: 0.0,
         descuExenta: 0.0,
         descuGravada: 0.0,
@@ -664,15 +666,12 @@ const resumen = async (_documento) => {
             valor: parseFloat(_documentosCC[0].IMPUESTO1.toFixed(2)),
           },
         ],
-        subTotal: parseFloat(
-          (_documentosCC[0].MONTO - _documentosCC[0].IMPUESTO1).toFixed(2)
-        ),
-        ivaPerci1: 0,
+        subTotal: parseFloat(_documentosCC[0].BASE_IMPUESTO1.toFixed(2)),
+        ivaPerci1: parseFloat(_documentosCC[0].IMPUESTO2.toFixed(2)),
         ivaRete1: 0,
         reteRenta: 0,
-        montoTotalOperacion: parseFloat(_documentosCC[0].MONTO.toFixed(2)),
-        totalLetras:
-          NumeroLetras(parseFloat(_documentosCC[0].MONTO.toFixed(2))) + " USD",
+        montoTotalOperacion: parseFloat(totalOperac.toFixed(2)),
+        totalLetras: NumeroLetras(parseFloat(totalOperac.toFixed(2))) + " USD",
 
         condicionOperacion: 1,
       };
@@ -684,22 +683,25 @@ const resumen = async (_documento) => {
 };
 const buscarCCF = async (ccf) => {
   try {
+    const arryDoc = [];
     const arr = ccf.split(" ");
-    for (let ccf of arr) {
-      if (ccf.match("CF")) {
-        const _factura = await SqlFactura(ccf);
+    for (let index = 0; index < arr.length; index++) {
+      const element = arr[index];
 
-        return _factura;
+      if (element.match("CF")) {
+        const _factura = await SqlFactura(element);
+        arryDoc.push(_factura[0]);
       }
 
-      if (ccf.match("DTE-03")) {
-        const parte1 = ccf.substring(0, 15);
-        const parte2 = ccf.substring(16, 31);
+      if (element.match("DTE-03")) {
+        const parte1 = element.substring(0, 15);
+        const parte2 = element.substring(16, 31);
         const partet = parte1 + "-24-" + parte2;
         const _factura = await SqlFactura(partet);
-        return _factura;
+        arryDoc.push(_factura[0]);
       }
     }
+    return arryDoc;
   } catch (error) {
     console.log(error);
   }

@@ -35,6 +35,12 @@ const Documentos = sequelize.define(
     IMPUESTO1: {
       type: DataTypes.DECIMAL,
     },
+    IMPUESTO2: {
+      type: DataTypes.DECIMAL,
+    },
+    BASE_IMPUESTO1: {
+      type: DataTypes.DECIMAL,
+    },
   },
   { timestamps: false, hasTrigger: true }
 );
