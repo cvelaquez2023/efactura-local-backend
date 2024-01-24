@@ -73,6 +73,7 @@ const postDte01 = async (req, res) => {
     _docExit[0].observaciones,
     _docExit[0].SUBTIPO_DOC_CXC
   );
+
   const _cuerpoLote = await cuerpoDoclote(
     _factura,
     _docExit[0].observaciones,
@@ -97,7 +98,8 @@ const postDte01 = async (req, res) => {
     extension: _extension,
     apendice: _apendice,
   };
-
+  //res.send(dte);
+  //return;
   //procedemos a recibir la firma del documento
   //convertimos descodificamos firma
 
@@ -362,10 +364,13 @@ const cuerpoDoc = async (_factura, obser, tipo) => {
       let _tributo = null;
       let exento = 0;
       let gravada = 0;
-      if ((element.IMPUESTO = "EXC")) {
+
+      if ((element.IMPUESTO ==="EXC")) {
         exento = parseFloat(ventagravada.toFixed(4));
+        gravada = 0;
       } else {
         gravada = parseFloat(ventagravada.toFixed(4));
+        exento = 0;
       }
       const data = {
         numItem: 1,
