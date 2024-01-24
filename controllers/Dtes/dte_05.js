@@ -46,6 +46,7 @@ const {
   SqlDocumentoCC,
   Sqlempresa,
   SqlFactura,
+  SqlFacturaArticulo,
 } = require("../../sqltx/sql");
 const { generaPdf05 } = require("../../utils/generaPdf");
 
@@ -83,7 +84,8 @@ const postDte05 = async (req, res) => {
 
   const _emisor = await emisor(_empresa, "05");
   const _receptor = await receptor(_factura, "05");
-  const _cuerpo = await cuerpoDoc(_factura, _docRela[0].numeroDocumento);
+
+  const _cuerpo = await cuerpoDoc(_factura, _docRela);
 
   const _cuerpoLote = await cuerpoDocLote(
     _factura,
@@ -354,6 +356,7 @@ const docRelacionados = async (datos) => {
     const docus = _documentosCC[0].APLICACION;
 
     const dataccf = await buscarCCF(docus);
+
     const datosRelacionados = [];
     for (let x = 0; x < dataccf.length; x++) {
       const element = dataccf[x];
@@ -433,6 +436,7 @@ const cuerpoDoc = async (_factura, _documento) => {
     const _cuerpoDoc = [];
     let corre = 0;
     const _doc = await SqlFacturaLinea(_factura);
+
     for (let x = 0; x < _doc.length; x++) {
       const element = _doc[x];
       const decLinea = element.DESC_TOT_LINEA;
@@ -442,11 +446,27 @@ const cuerpoDoc = async (_factura, _documento) => {
       const cantidad = element.CANTIDAD;
       const precioTotal = precio * cantidad;
       const ventagravada = precioTotal - totalDesc;
+      const _articulo = element.ARTICULO;
+      //Buscar enque docuemento esta este articulo
+      let docuRelacionado = "";
+
+      for (let y = 0; y < _documento.length; y++) {
+        const elementdoc = _documento[y];
+        const data = await SqlFacturaArticulo(
+          elementdoc.numeroDocumento,
+          _articulo
+        );
+
+        if (data.length > 0) {
+          docuRelacionado = data[0].FACTURA;
+          break;
+        }
+      }
       corre = corre + 1;
       const data = {
         numItem: corre,
         tipoItem: 1,
-        numeroDocumento: _documento,
+        numeroDocumento: docuRelacionado,
         codigo: element.ARTICULO,
         codTributo: null,
         descripcion: element.DESCRIPCION,
@@ -466,6 +486,7 @@ const cuerpoDoc = async (_factura, _documento) => {
     const _cuerpoDoc = [];
     let corre = 0;
     const _doc = await SqlDocumentoCC(_factura);
+
     for (let x = 0; x < _doc.length; x++) {
       const element = _doc[x];
       corre = corre + 1;
@@ -487,9 +508,9 @@ const cuerpoDoc = async (_factura, _documento) => {
       };
       _cuerpoDoc.push(data);
     }
-
-    return _cuerpoDoc;
   }
+
+  return _cuerpoDoc;
 };
 
 const cuerpoDocLote = async (_factura, _documento) => {
@@ -687,10 +708,12 @@ const buscarCCF = async (ccf) => {
     const arr = ccf.split(" ");
     for (let index = 0; index < arr.length; index++) {
       const element = arr[index];
-
       if (element.match("CF")) {
         const _factura = await SqlFactura(element);
-        arryDoc.push(_factura[0]);
+
+        if (_factura.length > 0) {
+          arryDoc.push(_factura[0]);
+        }
       }
 
       if (element.match("DTE-03")) {
@@ -698,7 +721,9 @@ const buscarCCF = async (ccf) => {
         const parte2 = element.substring(16, 31);
         const partet = parte1 + "-24-" + parte2;
         const _factura = await SqlFactura(partet);
-        arryDoc.push(_factura[0]);
+        if (_factura.length > 0) {
+          arryDoc.push(_factura[0]);
+        }
       }
     }
     return arryDoc;

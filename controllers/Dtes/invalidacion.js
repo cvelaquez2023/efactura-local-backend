@@ -126,6 +126,7 @@ const postInvalidar = async (req, res) => {
     motivo: _motivo,
   };
 
+ 
   const datafirma = {
     nit: process.env.DTE_NIT,
     activo: true,
@@ -215,7 +216,7 @@ const postInvalidar = async (req, res) => {
     //Consultados correo del cliente
 
     const doc = documento.replace("-24-", "-");
-    const tipo =doc.substring(4, 6);
+    const tipo = doc.substring(4, 6);
     const tipoDoc = "dte" + tipo;
     await emailInvalidado(doc, datosDte[0].correo, tipoDoc);
     res.send({

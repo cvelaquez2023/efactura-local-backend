@@ -17,6 +17,14 @@ const SqlFacturaLinea = async (factura) => {
     type: QueryTypes.SELECT,
   });
 };
+const SqlFacturaArticulo = async (factura, articulo) => {
+  return await sequelize.query(
+    `EXEC dte.dbo.dte_FacturaLineaArticulo '${factura}','${articulo}'`,
+    {
+      type: QueryTypes.SELECT,
+    }
+  );
+};
 const SqlFacturaRet = async (factura) => {
   return await sequelize.query(`EXEC dte.dbo.dte_RetencionFA '${factura}'`, {
     type: QueryTypes.SELECT,
@@ -197,4 +205,5 @@ module.exports = {
   SqlDteEmisor,
   SqlDteSujetoExcluido,
   SqlDteCuerpo,
+  SqlFacturaArticulo,
 };
